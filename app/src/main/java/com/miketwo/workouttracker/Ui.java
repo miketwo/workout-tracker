@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
 import android.view.View;
@@ -28,6 +29,7 @@ final class Ui {
     static GradientDrawable bg(int color,int radius){GradientDrawable g=new GradientDrawable();g.setColor(color);g.setCornerRadius(radius);return g;}
     static LinearLayout card(Context c){LinearLayout v=new LinearLayout(c);v.setOrientation(LinearLayout.VERTICAL);v.setPadding(dp(c,18),dp(c,16),dp(c,18),dp(c,16));v.setBackground(bg(WHITE,dp(c,18)));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(c,8),0,dp(c,8));v.setLayoutParams(p);v.setElevation(dp(c,1));return v;}
     static Button button(Context c,String value,boolean primary){Button b=new Button(c);b.setText(value);b.setTextSize(17);b.setAllCaps(false);b.setTypeface(Typeface.DEFAULT,Typeface.BOLD);b.setTextColor(primary?WHITE:FOREST);b.setBackground(bg(primary?FOREST:MINT,dp(c,14)));b.setGravity(Gravity.CENTER);b.setMinHeight(dp(c,56));b.setPadding(dp(c,16),dp(c,10),dp(c,16),dp(c,10));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(c,7),0,dp(c,7));b.setLayoutParams(p);return b;}
+    static Button iconButton(Context c,String value,int iconRes,boolean primary){Button b=button(c,value,primary);Drawable icon=c.getDrawable(iconRes);b.setCompoundDrawablesWithIntrinsicBounds(icon,null,null,null);b.setCompoundDrawablePadding(dp(c,12));b.setGravity(Gravity.CENTER_VERTICAL);return b;}
     static Button smallButton(Context c,String value){Button b=button(c,value,false);b.setTextSize(14);b.setMinHeight(dp(c,44));return b;}
     static EditText input(Context c,String hint){EditText e=new EditText(c);e.setHint(hint);e.setTextSize(18);e.setTextColor(INK);e.setHintTextColor(Color.rgb(130,138,133));e.setSingleLine(false);e.setBackground(bg(WHITE,dp(c,12)));e.setPadding(dp(c,14),dp(c,12),dp(c,14),dp(c,12));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(c,4),0,dp(c,8));e.setLayoutParams(p);return e;}
     static LinearLayout row(Context c){LinearLayout r=new LinearLayout(c);r.setOrientation(LinearLayout.HORIZONTAL);r.setGravity(Gravity.CENTER_VERTICAL);return r;}

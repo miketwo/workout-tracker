@@ -57,19 +57,30 @@ public class AppSmokeTest {
         }
     }
 
-    @Test public void splashShowsVersionQuoteAndOpensHomeOnRequest() {
+    @Test public void splashShowsVersionQuoteAndRoutesToTheThreeActivities() {
         try (ActivityController<SplashActivity> splash = Robolectric.buildActivity(SplashActivity.class).setup()) {
-            TextView version = findText(splash.get().getWindow().getDecorView(), "Version 0.1.2");
+            TextView version = findText(splash.get().getWindow().getDecorView(), "Version 0.1.3");
             assertNotNull(version);
-            assertTrue(version.getText().toString().contains("build 3"));
+            assertTrue(version.getText().toString().contains("build 4"));
             assertNotNull(findText(splash.get().getWindow().getDecorView(), "James Allen"));
-            Button begin = findButton(splash.get().getWindow().getDecorView(), "Let's go!");
-            assertNotNull(begin);
-            begin.performClick();
-            Intent next = shadowOf(splash.get()).getNextStartedActivity();
-            assertNotNull(next);
-            assertEquals(MainActivity.class.getName(), next.getComponent().getClassName());
+            assertNull(findButton(splash.get().getWindow().getDecorView(), "Let's go!"));
+            assertRoute(splash.get(), "Plan", PlansActivity.class);
         }
+        try (ActivityController<SplashActivity> splash = Robolectric.buildActivity(SplashActivity.class).setup()) {
+            assertRoute(splash.get(), "Workout", MainActivity.class);
+        }
+        try (ActivityController<SplashActivity> splash = Robolectric.buildActivity(SplashActivity.class).setup()) {
+            assertRoute(splash.get(), "Review", HistoryActivity.class);
+        }
+    }
+
+    private void assertRoute(SplashActivity splash, String label, Class<?> destination) {
+            Button button = findButton(splash.getWindow().getDecorView(), label);
+            assertNotNull(button);
+            button.performClick();
+            Intent next = shadowOf(splash).getNextStartedActivity();
+            assertNotNull(next);
+            assertEquals(destination.getName(), next.getComponent().getClassName());
     }
 
     private Button findButton(View view, String text) {

@@ -58,16 +58,24 @@ public class SplashActivity extends Activity {
         body.addView(introduction, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 2f));
 
         LinearLayout action = new LinearLayout(this);
-        action.setGravity(Gravity.CENTER);
-        Button begin = Ui.button(this, "Let's go!", true);
-        begin.setTextSize(23);
-        begin.setOnClickListener(v -> {
-            startActivity(new Intent(this, MainActivity.class));
-            finish();
-        });
-        action.addView(begin, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        action.setOrientation(LinearLayout.VERTICAL);
+        action.setGravity(Gravity.CENTER_VERTICAL);
+        Button plan = Ui.iconButton(this, "Plan", R.drawable.ic_plan, true);
+        plan.setOnClickListener(v -> open(PlansActivity.class));
+        action.addView(plan);
+        Button workout = Ui.iconButton(this, "Workout", R.drawable.ic_workout, true);
+        workout.setOnClickListener(v -> open(MainActivity.class));
+        action.addView(workout);
+        Button review = Ui.iconButton(this, "Review", R.drawable.ic_review, true);
+        review.setOnClickListener(v -> open(HistoryActivity.class));
+        action.addView(review);
         body.addView(action, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         setContentView(body);
+    }
+
+    private void open(Class<? extends Activity> destination) {
+        startActivity(new Intent(this, destination));
+        finish();
     }
 
     private String nextQuote() {
