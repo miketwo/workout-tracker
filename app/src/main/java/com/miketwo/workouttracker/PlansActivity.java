@@ -15,7 +15,7 @@ public class PlansActivity extends Activity {
     @Override protected void onResume(){super.onResume();if(body!=null)render();}
     private void render(){
         body=Ui.column(this);Ui.page(this,body);
-        Button back=Ui.smallButton(this,"‹ Home");back.setOnClickListener(v->Ui.home(this));body.addView(back);
+        Button back=Ui.smallButton(this,"‹ Home");back.setOnClickListener(v->Ui.openHome(this));body.addView(back);
         body.addView(Ui.title(this,"Workout plans"));
         body.addView(Ui.text(this,"Plan here. At the gym, the app will simply guide you through it.",16,Ui.MUTED));
         for(Models.Plan p:Db.get(this).plans()){

@@ -18,7 +18,7 @@ public class CardioActivity extends Activity {
     private Spinner activity,unit; private EditText date,duration,distance,intervals,notes,laps,poolLength; private LinearLayout body,fields;
     @Override public void onCreate(Bundle state){super.onCreate(state);render();}
     private void render(){
-        body=Ui.column(this);Ui.page(this,body);Button back=Ui.smallButton(this,"‹ Home");back.setOnClickListener(v->Ui.home(this));body.addView(back);body.addView(Ui.title(this,"Log cardio"));
+        body=Ui.column(this);Ui.page(this,body);Button back=Ui.smallButton(this,"‹ Home");back.setOnClickListener(v->Ui.openHome(this));body.addView(back);body.addView(Ui.title(this,"Log cardio"));
         body.addView(Ui.text(this,"The phone can stay out of the way. Record the useful totals afterward.",16,Ui.MUTED));
         body.addView(Ui.label(this,"Activity"));activity=spinner(new String[]{"Run","Swim"});String requested=getIntent().getStringExtra("activity");if("Swim".equals(requested))activity.setSelection(1);activity.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){public void onItemSelected(android.widget.AdapterView<?> p,android.view.View v,int pos,long id){renderFields();}public void onNothingSelected(android.widget.AdapterView<?> p){}});body.addView(activity);
         body.addView(Ui.label(this,"Date"));date=input(LocalDate.now().toString(),false);body.addView(date);fields=new LinearLayout(this);fields.setOrientation(LinearLayout.VERTICAL);body.addView(fields);renderFields();

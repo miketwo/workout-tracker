@@ -11,7 +11,7 @@ import android.widget.TextView;
 import java.util.List;
 import java.util.Locale;
 
-public class MainActivity extends Activity {
+public class WorkoutDashboardActivity extends Activity {
     private Db db;
     private LinearLayout body;
 
@@ -53,7 +53,7 @@ public class MainActivity extends Activity {
         View gap=new View(this);nav.addView(gap,new LinearLayout.LayoutParams(Ui.dp(this,10),1));
         Button logButton=Ui.smallButton(this,"Log cardio");Ui.weighted(logButton,1);logButton.setOnClickListener(v->startActivity(new Intent(this,CardioActivity.class)));nav.addView(logButton);
         body.addView(nav);
-        Button history=Ui.button(this,"History & progress",false);history.setOnClickListener(v->startActivity(new Intent(this,HistoryActivity.class)));body.addView(history);
+        Button history=Ui.button(this,"History & progress",false);history.setOnClickListener(v->startActivity(new Intent(this,ReviewActivity.class)));body.addView(history);
         body.addView(Ui.text(this,"Your data stays on this phone in this release. Back up before uninstalling.",13,Ui.MUTED));
     }
 

@@ -10,7 +10,7 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-public class SplashActivity extends Activity {
+public class HomeActivity extends Activity {
     // Short excerpts from James Allen's public-domain 1903 book, As a Man Thinketh.
     // Source: https://www.gutenberg.org/ebooks/4507
     private static final String[] QUOTES = {
@@ -60,10 +60,10 @@ public class SplashActivity extends Activity {
         plan.setOnClickListener(v -> open(PlansActivity.class));
         action.addView(plan);
         Button workout = Ui.iconButton(this, "Workout", R.drawable.ic_workout, true);
-        workout.setOnClickListener(v -> open(MainActivity.class));
+        workout.setOnClickListener(v -> open(WorkoutDashboardActivity.class));
         action.addView(workout);
         Button review = Ui.iconButton(this, "Review", R.drawable.ic_review, true);
-        review.setOnClickListener(v -> open(HistoryActivity.class));
+        review.setOnClickListener(v -> open(ReviewActivity.class));
         action.addView(review);
         body.addView(action, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         Ui.screen(this, body);
@@ -74,7 +74,7 @@ public class SplashActivity extends Activity {
     }
 
     private String nextQuote() {
-        SharedPreferences preferences = getSharedPreferences("splash", MODE_PRIVATE);
+        SharedPreferences preferences = getSharedPreferences("home", MODE_PRIVATE);
         int index = preferences.getInt("next_quote", 0) % QUOTES.length;
         preferences.edit().putInt("next_quote", (index + 1) % QUOTES.length).apply();
         return QUOTES[index];

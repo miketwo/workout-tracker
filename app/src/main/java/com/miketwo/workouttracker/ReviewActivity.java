@@ -9,10 +9,10 @@ import android.widget.LinearLayout;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-public class HistoryActivity extends Activity {
+public class ReviewActivity extends Activity {
     @Override public void onCreate(Bundle state){super.onCreate(state);render();}
     private void render(){
-        LinearLayout body=Ui.column(this);Ui.page(this,body);Button back=Ui.smallButton(this,"‹ Home");back.setOnClickListener(v->Ui.home(this));body.addView(back);body.addView(Ui.title(this,"History & progress"));
+        LinearLayout body=Ui.column(this);Ui.page(this,body);Button back=Ui.smallButton(this,"‹ Home");back.setOnClickListener(v->Ui.openHome(this));body.addView(back);body.addView(Ui.title(this,"History & progress"));
         android.database.sqlite.SQLiteDatabase db=Db.get(this).getReadableDatabase();
         int workouts=scalarInt(db,"SELECT COUNT(*) FROM sessions WHERE status<>'active'");int sets=scalarInt(db,"SELECT COUNT(*) FROM set_results WHERE status='complete'");double volume=scalarDouble(db,"SELECT COALESCE(SUM(actual_reps*actual_weight),0) FROM set_results WHERE status='complete'");double cardioMin=scalarDouble(db,"SELECT COALESCE(SUM(duration_min),0) FROM cardio");
         LinearLayout stats=Ui.card(this);stats.addView(Ui.label(this,"All-time totals"));stats.addView(Ui.heading(this,workouts+" strength workouts  •  "+sets+" sets"));stats.addView(Ui.text(this,WorkoutMath.formatWeight(volume)+" lb total lifting volume",17,Ui.FOREST));stats.addView(Ui.text(this,WorkoutMath.formatWeight(cardioMin)+" cardio minutes",16,Ui.MUTED));body.addView(stats);

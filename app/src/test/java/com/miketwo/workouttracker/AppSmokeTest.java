@@ -42,9 +42,9 @@ public class AppSmokeTest {
         assertEquals(6, db.completedSetCount(1));
     }
 
-    @Test public void homeAndGuidedWorkoutLaunchAndRecordASet() {
-        try (ActivityController<MainActivity> home = Robolectric.buildActivity(MainActivity.class).setup()) {
-            assertNotNull(home.get().getWindow().getDecorView());
+    @Test public void workoutDashboardAndGuidedWorkoutLaunchAndRecordASet() {
+        try (ActivityController<WorkoutDashboardActivity> dashboard = Robolectric.buildActivity(WorkoutDashboardActivity.class).setup()) {
+            assertNotNull(dashboard.get().getWindow().getDecorView());
         }
         Db db = Db.get(app);
         Models.Plan strength = null;
@@ -60,21 +60,21 @@ public class AppSmokeTest {
         }
     }
 
-    @Test public void splashShowsVersionQuoteAndRoutesToTheThreeActivities() {
-        try (ActivityController<SplashActivity> splash = Robolectric.buildActivity(SplashActivity.class).setup()) {
-            TextView version = findText(splash.get().getWindow().getDecorView(), "Version 0.1.8");
+    @Test public void homeShowsVersionQuoteAndRoutesToTheThreeActivities() {
+        try (ActivityController<HomeActivity> home = Robolectric.buildActivity(HomeActivity.class).setup()) {
+            TextView version = findText(home.get().getWindow().getDecorView(), "Version 0.1.9");
             assertNotNull(version);
-            assertTrue(version.getText().toString().contains("build 9"));
-            assertNotNull(findText(splash.get().getWindow().getDecorView(), "James Allen"));
-            assertNull(findButton(splash.get().getWindow().getDecorView(), "Let's go!"));
-            assertRoute(splash.get(), "Plan", PlansActivity.class);
-            assertFalse(splash.get().isFinishing());
+            assertTrue(version.getText().toString().contains("build 10"));
+            assertNotNull(findText(home.get().getWindow().getDecorView(), "James Allen"));
+            assertNull(findButton(home.get().getWindow().getDecorView(), "Let's go!"));
+            assertRoute(home.get(), "Plan", PlansActivity.class);
+            assertFalse(home.get().isFinishing());
         }
-        try (ActivityController<SplashActivity> splash = Robolectric.buildActivity(SplashActivity.class).setup()) {
-            assertRoute(splash.get(), "Workout", MainActivity.class);
+        try (ActivityController<HomeActivity> home = Robolectric.buildActivity(HomeActivity.class).setup()) {
+            assertRoute(home.get(), "Workout", WorkoutDashboardActivity.class);
         }
-        try (ActivityController<SplashActivity> splash = Robolectric.buildActivity(SplashActivity.class).setup()) {
-            assertRoute(splash.get(), "Review", HistoryActivity.class);
+        try (ActivityController<HomeActivity> home = Robolectric.buildActivity(HomeActivity.class).setup()) {
+            assertRoute(home.get(), "Review", ReviewActivity.class);
         }
     }
 
@@ -85,7 +85,7 @@ public class AppSmokeTest {
             home.performClick();
             Intent next = shadowOf(plans.get()).getNextStartedActivity();
             assertNotNull(next);
-            assertEquals(SplashActivity.class.getName(), next.getComponent().getClassName());
+            assertEquals(HomeActivity.class.getName(), next.getComponent().getClassName());
             assertTrue((next.getFlags() & Intent.FLAG_ACTIVITY_CLEAR_TASK) != 0);
         }
     }
@@ -126,11 +126,11 @@ public class AppSmokeTest {
         }
     }
 
-    private void assertRoute(SplashActivity splash, String label, Class<?> destination) {
-            Button button = findButton(splash.getWindow().getDecorView(), label);
+    private void assertRoute(HomeActivity home, String label, Class<?> destination) {
+            Button button = findButton(home.getWindow().getDecorView(), label);
             assertNotNull(button);
             button.performClick();
-            Intent next = shadowOf(splash).getNextStartedActivity();
+            Intent next = shadowOf(home).getNextStartedActivity();
             assertNotNull(next);
             assertEquals(destination.getName(), next.getComponent().getClassName());
     }

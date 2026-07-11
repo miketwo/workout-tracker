@@ -13,7 +13,7 @@
         android:label="Workout Tracker"
         android:theme="@style/AppTheme"
         android:supportsRtl="true">
-        <activity android:name=".HistoryActivity" />
+        <activity android:name=".ReviewActivity" />
         <activity android:name=".ExportActivity" />
         <activity android:name=".RestActivity" android:screenOrientation="portrait" tools:ignore="DiscouragedApi,LockedOrientationActivity" />
         <activity android:name=".IntervalActivity" android:screenOrientation="portrait" tools:ignore="DiscouragedApi,LockedOrientationActivity" />
@@ -25,8 +25,8 @@
         <activity android:name=".WorkoutActivity" android:screenOrientation="portrait" tools:ignore="DiscouragedApi,LockedOrientationActivity" />
         <activity android:name=".PlanEditorActivity" />
         <activity android:name=".PlansActivity" />
-        <activity android:name=".MainActivity" />
-        <activity android:name=".SplashActivity" android:exported="true">
+        <activity android:name=".WorkoutDashboardActivity" />
+        <activity android:name=".HomeActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
