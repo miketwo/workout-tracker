@@ -62,3 +62,12 @@ The original `tracker.py`, `workouts.csv`, and `cardio.csv` are archived locally
 ./gradlew lintRelease
 ./gradlew assembleRelease
 ```
+
+## Automated feedback loop
+
+The guarded RALPH loop can turn explicitly approved GitHub or GitLab issues into tested GitHub pull requests without merging them automatically. See [docs/RALPH.md](docs/RALPH.md), then run:
+
+```bash
+./scripts/ralph-start.sh
+tail -f .ralph/ralph.log
+```
