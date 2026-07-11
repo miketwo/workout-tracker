@@ -108,7 +108,7 @@ fail_issue() {
 }
 
 process_issue() {
-  local issue="$1" id title body url slug branch worktree prompt result pr_url validation pr_body
+  local issue="$1" id title body url slug branch worktree prompt result pr_url validation pr_body deploy_message final_comment
   id="$(jq -r .id <<<"$issue")"
   title="$(jq -r .title <<<"$issue")"
   body="$(jq -r .body <<<"$issue")"
@@ -200,7 +200,14 @@ process_issue() {
     --title "Fix #$id: $title" --body-file "$pr_body")"
 
   transition_labels "$id" "$REVIEW_LABEL" "$WORKING_LABEL"
-  comment_issue "$id" "RALPH opened a tested PR for human review: $pr_url"
+  deploy_message="The emulator was not updated; deploy manually with \`./scripts/dev-deploy.sh --emulator\`."
+  if [[ "${RALPH_AUTO_DEPLOY_EMULATOR:-true}" == true ]] && \
+      "$ROOT/scripts/dev-deploy.sh" --emulator --no-build \
+        --apk "$worktree/app/build/outputs/apk/debug/app-debug.apk" >>"$validation" 2>&1; then
+    deploy_message="The validated build is now running in the local emulator for review."
+  fi
+  printf -v final_comment 'RALPH opened a tested PR for human review: %s\n\n%s' "$pr_url" "$deploy_message"
+  comment_issue "$id" "$final_comment"
   git worktree remove --force "$worktree"
   log "Issue $id completed: $pr_url"
 }

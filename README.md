@@ -71,3 +71,12 @@ The guarded RALPH loop can turn explicitly approved GitHub or GitLab issues into
 ./scripts/ralph-start.sh
 tail -f .ralph/ralph.log
 ```
+
+For the complete WSL-build → Windows-emulator → reviewed PR → physical-Pixel workflow, see [docs/DEV_CYCLE.md](docs/DEV_CYCLE.md). The common commands are:
+
+```bash
+./scripts/dev-emulator.sh start
+./scripts/feedback.sh "Describe the improvement"
+./scripts/dev-deploy.sh --emulator
+./scripts/dev-deploy.sh --phone --release
+```

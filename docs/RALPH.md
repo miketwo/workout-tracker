@@ -8,8 +8,9 @@ RALPH watches explicitly approved issues, asks Codex to implement one in an isol
 2. Add the `ralph:ready` label only when the issue is safe for autonomous implementation.
 3. Start the loop with `./scripts/ralph-start.sh`.
 4. Watch it with `tail -f .ralph/ralph.log`.
-5. Review, test, and merge the resulting PR yourself.
-6. Stop it with `./scripts/ralph-stop.sh`.
+5. RALPH installs the validated PR build into the local emulator automatically.
+6. Review, test, and merge the resulting PR yourself.
+7. Stop it with `./scripts/ralph-stop.sh`.
 
 The loop changes labels from `ralph:ready` → `ralph:in-progress` → `ralph:awaiting-review`. Failures receive `ralph:failed` and are not retried until a human removes that label and restores `ralph:ready`.
 
@@ -48,4 +49,5 @@ Do not place tokens in the repository. `.env*` and `.ralph/` are ignored.
 - The outer script—not Codex—runs Git operations, validation, and PR creation.
 - Unit tests, Android lint, and a debug APK build must all pass.
 - Every result requires human PR review and merge.
+- Successful PR builds are deployed only to the local emulator, never automatically to the physical phone.
 - Failed worktrees and logs remain under ignored `.ralph/` for diagnosis.
