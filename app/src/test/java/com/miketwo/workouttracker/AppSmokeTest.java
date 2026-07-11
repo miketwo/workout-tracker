@@ -18,6 +18,7 @@ import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 
 import static org.junit.Assert.*;
+import static org.robolectric.Shadows.shadowOf;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 35)
@@ -56,11 +57,18 @@ public class AppSmokeTest {
         }
     }
 
-    @Test public void splashShowsVersionAndOpensHome() {
+    @Test public void splashShowsVersionQuoteAndOpensHomeOnRequest() {
         try (ActivityController<SplashActivity> splash = Robolectric.buildActivity(SplashActivity.class).setup()) {
-            TextView version = findText(splash.get().getWindow().getDecorView(), "Version 0.1.1");
+            TextView version = findText(splash.get().getWindow().getDecorView(), "Version 0.1.2");
             assertNotNull(version);
-            assertTrue(version.getText().toString().contains("build 2"));
+            assertTrue(version.getText().toString().contains("build 3"));
+            assertNotNull(findText(splash.get().getWindow().getDecorView(), "James Allen"));
+            Button begin = findButton(splash.get().getWindow().getDecorView(), "Let's go!");
+            assertNotNull(begin);
+            begin.performClick();
+            Intent next = shadowOf(splash.get()).getNextStartedActivity();
+            assertNotNull(next);
+            assertEquals(MainActivity.class.getName(), next.getComponent().getClassName());
         }
     }
 
