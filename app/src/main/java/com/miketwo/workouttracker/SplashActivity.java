@@ -71,7 +71,6 @@ public class SplashActivity extends Activity {
 
     private void open(Class<? extends Activity> destination) {
         startActivity(new Intent(this, destination));
-        finish();
     }
 
     private String nextQuote() {

@@ -62,12 +62,13 @@ public class AppSmokeTest {
 
     @Test public void splashShowsVersionQuoteAndRoutesToTheThreeActivities() {
         try (ActivityController<SplashActivity> splash = Robolectric.buildActivity(SplashActivity.class).setup()) {
-            TextView version = findText(splash.get().getWindow().getDecorView(), "Version 0.1.7");
+            TextView version = findText(splash.get().getWindow().getDecorView(), "Version 0.1.8");
             assertNotNull(version);
-            assertTrue(version.getText().toString().contains("build 8"));
+            assertTrue(version.getText().toString().contains("build 9"));
             assertNotNull(findText(splash.get().getWindow().getDecorView(), "James Allen"));
             assertNull(findButton(splash.get().getWindow().getDecorView(), "Let's go!"));
             assertRoute(splash.get(), "Plan", PlansActivity.class);
+            assertFalse(splash.get().isFinishing());
         }
         try (ActivityController<SplashActivity> splash = Robolectric.buildActivity(SplashActivity.class).setup()) {
             assertRoute(splash.get(), "Workout", MainActivity.class);
