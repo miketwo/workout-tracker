@@ -12,6 +12,8 @@ RALPH watches explicitly approved issues, asks Codex to implement one in an isol
 6. Review, test, and merge the resulting PR yourself.
 7. Stop it with `./scripts/ralph-stop.sh`.
 
+On WSL the start script uses a detached `tmux` session, so the loop survives terminal closure. Inspect the live session with `tmux attach -t workout-tracker-ralph` (detach with `Ctrl+B`, then `D`).
+
 The loop changes labels from `ralph:ready` → `ralph:in-progress` → `ralph:awaiting-review`. Failures receive `ralph:failed` and are not retried until a human removes that label and restores `ralph:ready`.
 
 Run a non-mutating poll check with:
