@@ -90,10 +90,10 @@ public class WorkoutActivity extends Activity {
 
     private void endDialog(){
         EditText note=Ui.input(this,"Optional workout note");
-        new AlertDialog.Builder(this).setTitle("End this workout?").setMessage("Completed work will be saved. Remaining work will stay incomplete.").setView(note).setNegativeButton("Keep going",null).setPositiveButton("Save & end",(d,w)->{db.finishSession(sessionId,"incomplete",note.getText().toString().trim());clearAndExit();}).show();
+        new AlertDialog.Builder(this).setTitle("End this workout?").setMessage("Save completed work, or discard this workout entirely.").setView(note).setNegativeButton("Keep going",null).setNeutralButton("Quit without saving",(d,w)->{db.discardSession(sessionId);clearAndExit();}).setPositiveButton("Save & end",(d,w)->{db.finishSession(sessionId,"incomplete",note.getText().toString().trim());clearAndExit();}).show();
     }
     private void finishWorkout(String status){if(completionShown)return;completionShown=true;EditText note=Ui.input(this,"Optional workout note");new AlertDialog.Builder(this).setCancelable(false).setTitle("Workout complete").setMessage(db.completedSetCount(sessionId)+" set entries recorded. Nice work showing up.").setView(note).setPositiveButton("View history",(d,w)->{db.finishSession(sessionId,status,note.getText().toString().trim());clearAndExit();startActivity(new android.content.Intent(this,HistoryActivity.class));}).setNegativeButton("Done",(d,w)->{db.finishSession(sessionId,status,note.getText().toString().trim());clearAndExit();}).show();}
     private void clearAndExit(){state.edit().clear().apply();finish();}
-    private void showEmpty(){LinearLayout b=Ui.column(this);Ui.page(this,b);b.addView(Ui.title(this,"This plan is empty"));b.addView(Ui.text(this,"Add exercises to the plan before starting it.",17,Ui.MUTED));Button done=Ui.button(this,"Back",true);done.setOnClickListener(v->{db.finishSession(sessionId,"incomplete","");clearAndExit();});b.addView(done);}
+    private void showEmpty(){LinearLayout b=Ui.column(this);Ui.page(this,b);b.addView(Ui.title(this,"This plan is empty"));b.addView(Ui.text(this,"Add exercises to the plan before starting it.",17,Ui.MUTED));Button done=Ui.button(this,"Back",true);done.setOnClickListener(v->{db.discardSession(sessionId);clearAndExit();});b.addView(done);}
     @Override public void onBackPressed(){endDialog();}
 }

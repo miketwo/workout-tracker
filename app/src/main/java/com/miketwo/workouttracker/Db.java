@@ -162,6 +162,16 @@ final class Db extends SQLiteOpenHelper {
         getWritableDatabase().update("sessions",v,"id=?",new String[]{String.valueOf(id)});
     }
 
+    void discardSession(long id) {
+        SQLiteDatabase db=getWritableDatabase();
+        db.beginTransaction();
+        try {
+            db.delete("set_results","session_id=?",new String[]{String.valueOf(id)});
+            db.delete("sessions","id=?",new String[]{String.valueOf(id)});
+            db.setTransactionSuccessful();
+        } finally { db.endTransaction(); }
+    }
+
     void recordSet(long sessionId, Models.Exercise e, int setNumber, int actualReps, double actualWeight, int rir, String status) { recordSet(sessionId,e,setNumber,actualReps,actualWeight,rir,status,0); }
     void recordSet(long sessionId, Models.Exercise e, int setNumber, int actualReps, double actualWeight, int rir, String status, int actualDuration) {
         ContentValues v = new ContentValues();

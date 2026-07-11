@@ -1,7 +1,9 @@
 package com.miketwo.workouttracker;
 
 import android.app.Application;
+import android.app.AlertDialog;
 import android.content.Intent;
+import android.os.Looper;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -16,6 +18,7 @@ import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowAlertDialog;
 
 import static org.junit.Assert.*;
 import static org.robolectric.Shadows.shadowOf;
@@ -59,9 +62,9 @@ public class AppSmokeTest {
 
     @Test public void splashShowsVersionQuoteAndRoutesToTheThreeActivities() {
         try (ActivityController<SplashActivity> splash = Robolectric.buildActivity(SplashActivity.class).setup()) {
-            TextView version = findText(splash.get().getWindow().getDecorView(), "Version 0.1.5");
+            TextView version = findText(splash.get().getWindow().getDecorView(), "Version 0.1.6");
             assertNotNull(version);
-            assertTrue(version.getText().toString().contains("build 6"));
+            assertTrue(version.getText().toString().contains("build 7"));
             assertNotNull(findText(splash.get().getWindow().getDecorView(), "James Allen"));
             assertNull(findButton(splash.get().getWindow().getDecorView(), "Let's go!"));
             assertRoute(splash.get(), "Plan", PlansActivity.class);
@@ -83,6 +86,32 @@ public class AppSmokeTest {
             assertNotNull(next);
             assertEquals(SplashActivity.class.getName(), next.getComponent().getClassName());
             assertTrue((next.getFlags() & Intent.FLAG_ACTIVITY_CLEAR_TASK) != 0);
+        }
+    }
+
+    @Test public void workoutCanQuitWithoutSaving() {
+        Db db = Db.get(app);
+        Models.Plan strength = null;
+        for (Models.Plan p : db.plans()) if ("Strength".equals(p.type)) { strength = p; break; }
+        assertNotNull(strength);
+        Intent intent = new Intent(app, WorkoutActivity.class).putExtra("plan_id", strength.id);
+        try (ActivityController<WorkoutActivity> workout = Robolectric.buildActivity(WorkoutActivity.class, intent).setup()) {
+            long session = app.getSharedPreferences("active_workout", 0).getLong("session_id", 0);
+            assertTrue(session > 0);
+            Button end = findButton(workout.get().getWindow().getDecorView(), "End workout");
+            assertNotNull(end);
+            end.performClick();
+            AlertDialog dialog = ShadowAlertDialog.getLatestAlertDialog();
+            assertNotNull(dialog);
+            Button quit = dialog.getButton(AlertDialog.BUTTON_NEUTRAL);
+            assertEquals("Quit without saving", quit.getText());
+            quit.performClick();
+            shadowOf(Looper.getMainLooper()).idle();
+            try (android.database.Cursor cursor = db.getReadableDatabase().rawQuery("SELECT COUNT(*) FROM sessions WHERE id=?", new String[]{String.valueOf(session)})) {
+                assertTrue(cursor.moveToFirst());
+                assertEquals(0, cursor.getInt(0));
+            }
+            assertEquals(0, app.getSharedPreferences("active_workout", 0).getLong("session_id", 0));
         }
     }
 
