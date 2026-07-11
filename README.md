@@ -31,19 +31,21 @@ The repository includes a Gradle wrapper and a bootstrap script that downloads a
 
 The signed result is `dist/workout-tracker.apk`. Preserve `.keys/workout-tracker.jks`: every future update must use this same private signing key. Back it up somewhere secure together with the app's JSON export.
 
-## Install on a Pixel by USB
+## Install and update a Pixel over Wi-Fi
 
-1. On the phone, open **Settings → About phone** and tap **Build number** seven times.
-2. Open **Settings → System → Developer options** and enable **USB debugging**.
-3. Connect the phone with a data-capable USB cable and choose **File transfer** if Android asks.
-4. Approve the phone's **Allow USB debugging** prompt.
-5. Run:
+Enable **Settings → System → Developer options → Wireless debugging**, choose **Pair device with pairing code**, then run:
 
 ```bash
-./scripts/install-usb.sh
+./scripts/wifi-pair.sh
 ```
 
-The `-r` install mode preserves data when updating an already installed copy signed with this repository's key. USB installation does not require enabling “Install unknown apps.” If WSL cannot see the USB device, copy `dist/workout-tracker.apk` to Windows and use the Windows Android `adb install -r` command, or copy the APK to the phone and open it from Files.
+After the one-time pairing, build, update, and launch the app directly on the phone with:
+
+```bash
+./scripts/dev-deploy.sh
+```
+
+The signed `-r` installation preserves app data. See [docs/DEV_CYCLE.md](docs/DEV_CYCLE.md) for pairing details, reconnecting after Android changes its port, and optional emulator/USB targets.
 
 ## Data safety
 
@@ -63,20 +65,12 @@ The original `tracker.py`, `workouts.csv`, and `cardio.csv` are archived locally
 ./gradlew assembleRelease
 ```
 
-## Automated feedback loop
+## Development cycle
 
-The guarded RALPH loop can turn explicitly approved GitHub or GitLab issues into tested GitHub pull requests without merging them automatically. See [docs/RALPH.md](docs/RALPH.md), then run:
-
-```bash
-./scripts/ralph-start.sh
-tail -f .ralph/ralph.log
-```
-
-For the complete WSL-build → Windows-emulator → reviewed PR → physical-Pixel workflow, see [docs/DEV_CYCLE.md](docs/DEV_CYCLE.md). The common commands are:
+Spoken requests in Codex are implemented, verified, and deployed over Wi-Fi by default. Manual equivalents are:
 
 ```bash
 ./scripts/dev-emulator.sh start
-./scripts/feedback.sh "Describe the improvement"
 ./scripts/dev-deploy.sh --emulator
-./scripts/dev-deploy.sh --phone --release
+./scripts/dev-deploy.sh                  # signed Wi-Fi update to Pixel
 ```

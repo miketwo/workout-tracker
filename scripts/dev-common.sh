@@ -4,6 +4,8 @@ DEV_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ADB_SERVER_PORT="${ANDROID_ADB_SERVER_PORT:-5038}"
 EMULATOR_SERIAL="${WORKOUT_EMULATOR_SERIAL:-emulator-5554}"
 AVD_NAME="${WORKOUT_AVD_NAME:-WorkoutTracker_Pixel8Pro_API36}"
+DEV_STATE="$DEV_ROOT/.dev-state"
+WIFI_DEVICE_FILE="$DEV_STATE/wifi-device"
 
 if [[ -z "${WINDOWS_USERNAME:-}" ]]; then
   WINDOWS_USERNAME="$(cd /mnt/c && /mnt/c/Windows/System32/cmd.exe /d /c 'echo %USERNAME%' 2>/dev/null | tr -d '\r' | tail -n 1)"
@@ -39,4 +41,28 @@ wait_for_android() {
 
 find_physical_device() {
   windows_adb devices | tr -d '\r' | awk '$2=="device" && $1 !~ /^emulator-/ {print $1; exit}'
+}
+
+find_usb_device() {
+  windows_adb devices | tr -d '\r' | awk '$2=="device" && $1 !~ /^emulator-/ && $1 !~ /:/ {print $1; exit}'
+}
+
+connect_saved_wifi_device() {
+  local saved="" discovered="" endpoint
+  [[ -f "$WIFI_DEVICE_FILE" ]] && saved="$(tr -d '[:space:]' < "$WIFI_DEVICE_FILE")"
+  discovered="$(windows_adb mdns services 2>/dev/null | tr -d '\r' | awk '$2=="_adb-tls-connect._tcp" && $3 ~ /:/ {print $3; exit}')"
+  for endpoint in "$saved" "$discovered"; do
+    [[ -n "$endpoint" ]] || continue
+    windows_adb connect "$endpoint" >/dev/null 2>&1 || true
+    if windows_adb -s "$endpoint" get-state >/dev/null 2>&1; then
+      mkdir -p "$DEV_STATE"
+      printf '%s\n' "$endpoint" > "$WIFI_DEVICE_FILE"
+      chmod 600 "$WIFI_DEVICE_FILE"
+      printf '%s\n' "$endpoint"
+      return 0
+    fi
+  done
+  echo "No paired Pixel is reachable over Wi-Fi." >&2
+  echo "Enable Wireless debugging, then run ./scripts/wifi-pair.sh (first use) or ./scripts/wifi-connect.sh (already paired)." >&2
+  return 1
 }

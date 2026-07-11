@@ -3,22 +3,24 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT/scripts/dev-common.sh"
-target=emulator
+target=wifi
 serial=""
-release=false
+mode=auto
 build=true
 apk=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --emulator) target=emulator ;;
-    --phone) target=phone ;;
+    --wifi|--phone) target=wifi ;;
+    --usb) target=usb ;;
     --serial) serial="$2"; shift ;;
-    --release) release=true ;;
+    --release) mode=release ;;
+    --debug) mode=debug ;;
     --no-build) build=false ;;
     --apk) apk="$2"; shift ;;
     -h|--help)
-      echo "Usage: $0 [--emulator|--phone|--serial SERIAL] [--release] [--no-build --apk PATH]"
+      echo "Usage: $0 [--wifi|--usb|--emulator|--serial SERIAL] [--release|--debug] [--no-build --apk PATH]"
       exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
@@ -29,14 +31,20 @@ require_windows_android_tools
 if [[ -z "$serial" && "$target" == emulator ]]; then
   "$ROOT/scripts/dev-emulator.sh" start
   serial="$EMULATOR_SERIAL"
+elif [[ -z "$serial" && "$target" == wifi ]]; then
+  serial="$(connect_saved_wifi_device)"
 elif [[ -z "$serial" ]]; then
-  serial="$(find_physical_device)"
-  [[ -n "$serial" ]] || { echo "No authorized physical Android device is visible to Windows ADB." >&2; exit 1; }
+  serial="$(find_usb_device)"
+  [[ -n "$serial" ]] || { echo "No authorized USB Android device is visible to Windows ADB." >&2; exit 1; }
+fi
+
+if [[ "$mode" == auto ]]; then
+  [[ "$target" == emulator ]] && mode=debug || mode=release
 fi
 
 if $build; then
   cd "$ROOT"
-  if $release; then
+  if [[ "$mode" == release ]]; then
     ./scripts/build-apk.sh
     apk="$ROOT/dist/workout-tracker.apk"
   else

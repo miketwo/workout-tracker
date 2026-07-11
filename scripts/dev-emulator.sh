@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT/scripts/dev-common.sh"
 command="${1:-start}"
-STATE="$ROOT/.ralph"
+STATE="$DEV_STATE"
 mkdir -p "$STATE"
 
 case "$command" in

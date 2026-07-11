@@ -1,59 +1,49 @@
-# Tight emulator-to-phone development cycle
+# Spoken-change to Pixel development cycle
 
-The app builds in WSL, while the Pixel 8 Pro Android 16 (API 36) emulator runs hardware-accelerated on Windows. Windows ADB reads APKs directly from their WSL UNC paths, so no manual copies or PowerShell commands are needed.
+The primary loop is direct: describe a change in the Codex app, let Codex implement and verify it, then install the consistently signed release directly from WSL to the Pixel over Android Wireless Debugging. No GitHub issue, background agent, APK copy, USB cable, or PowerShell step is involved.
+
+## One-time wireless pairing
+
+The computer and Pixel must be on the same Wi-Fi network.
+
+1. On the Pixel, open **Settings → System → Developer options → Wireless debugging** and enable it.
+2. Tap **Pair device with pairing code**. Keep that dialog open.
+3. In WSL, run `./scripts/wifi-pair.sh`.
+4. Enter the dialog's IP address and pairing port, followed by its six-digit code.
+5. When prompted again, enter the separate **IP address & port** shown on the main Wireless debugging screen.
+
+Pairing is normally remembered. The deploy script uses Android's local-network discovery to follow port changes automatically. If discovery is unavailable after a reboot or network change, open the main Wireless debugging screen and run:
+
+```bash
+./scripts/wifi-connect.sh CURRENT_IP:CURRENT_PORT
+```
 
 ## Daily loop
 
-Start the emulator once:
+Tell Codex the change you want. Repository instructions tell it to implement the change, run tests and lint, build the signed release, install it over Wi-Fi, and launch Workout Tracker automatically.
+
+The underlying command is simply:
+
+```bash
+./scripts/dev-deploy.sh
+```
+
+It builds and verifies the release, reads the APK directly from WSL through Windows ADB, updates the existing app without clearing data, and opens it on the phone.
+
+## Optional emulator and USB targets
+
+The Android 16 Pixel 8 Pro emulator remains available:
 
 ```bash
 ./scripts/dev-emulator.sh start
-```
-
-Submit feedback directly to RALPH:
-
-```bash
-./scripts/feedback.sh "Make the rest timer text larger" <<'EOF'
-The countdown should dominate the rest screen and remain legible from several feet away.
-Acceptance criteria:
-- Increase the countdown prominence without hiding the next-exercise preview.
-- Preserve portrait layout on Pixel 8 Pro dimensions.
-EOF
-```
-
-RALPH claims the issue, makes an isolated branch, runs tests/lint/build, opens a PR, and automatically installs that PR's debug APK into the running emulator. Watch progress with:
-
-```bash
-tail -f .ralph/ralph.log
-```
-
-After testing the PR build in the emulator, merge and redeploy the final `main` build:
-
-```bash
-./scripts/accept-pr.sh 12            # merge and refresh emulator
-./scripts/accept-pr.sh 12 --phone    # merge and install signed release on connected Pixel
-```
-
-For a change already present in the working tree, bypass issues and deploy immediately:
-
-```bash
 ./scripts/dev-deploy.sh --emulator
-./scripts/dev-deploy.sh --phone --release
+./scripts/dev-emulator.sh stop
 ```
 
-## Emulator lifecycle
+USB remains a fallback:
 
 ```bash
-./scripts/dev-emulator.sh status
-./scripts/dev-emulator.sh stop
-./scripts/dev-emulator.sh start
+./scripts/install-usb.sh
 ```
 
-The one-time setup is reproducible with `./scripts/setup-windows-emulator.sh`. It installs a local Windows JDK, Android command-line tools, emulator, and Pixel 8 Pro Android 16 image under the Windows user profile. The several-gigabyte SDK/AVD remains outside Git.
-
-## Boundaries
-
-- RALPH still requires human PR review and never merges automatically.
-- The emulator gets debug builds; the physical phone gets the consistently signed release build.
-- Emulator data and phone data are separate.
-- Rebooting Windows stops the emulator and WSL RALPH process; rerun `dev-emulator.sh start` and `ralph-start.sh`.
+The emulator receives fast debug builds. The real Pixel receives releases signed with the repository's dedicated local key, preserving compatibility with the currently installed app and its data.
