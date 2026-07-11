@@ -1,6 +1,7 @@
 package com.miketwo.workouttracker;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.widget.Button;
@@ -20,16 +21,19 @@ public class ReviewActivity extends Activity {
         body.addView(Ui.heading(this,"Strength by exercise"));
         try(Cursor c=db.rawQuery("SELECT exercise_name,COUNT(DISTINCT session_id),MAX(actual_weight),SUM(actual_reps*actual_weight) FROM set_results WHERE status='complete' GROUP BY exercise_name ORDER BY SUM(actual_reps*actual_weight) DESC",null)){while(c.moveToNext()){LinearLayout card=Ui.card(this);card.addView(Ui.heading(this,c.getString(0)));card.addView(Ui.text(this,c.getInt(1)+" session"+(c.getInt(1)==1?"":"s")+"  •  heaviest "+WorkoutMath.formatWeight(c.getDouble(2))+" lb",15,Ui.MUTED));card.addView(Ui.text(this,WorkoutMath.formatWeight(c.getDouble(3))+" lb total volume",17,Ui.FOREST));body.addView(card);}}
         body.addView(Ui.heading(this,"Recent activity"));
+        body.addView(Ui.text(this,"Long press a workout to delete it.",14,Ui.MUTED));
         boolean any=false;
-        try(Cursor c=db.rawQuery("SELECT plan_name,started_at,status,(SELECT COUNT(*) FROM set_results r WHERE r.session_id=s.id),(SELECT COALESCE(SUM(actual_reps*actual_weight),0) FROM set_results r WHERE r.session_id=s.id) FROM sessions s WHERE status<>'active' ORDER BY id DESC LIMIT 30",null)){
-            while(c.moveToNext()){any=true;LinearLayout card=Ui.card(this);card.addView(Ui.heading(this,c.getString(0)));card.addView(Ui.text(this,formatDate(c.getString(1))+"  •  "+c.getString(2),14,Ui.MUTED));card.addView(Ui.text(this,c.getInt(3)+" set entries  •  "+WorkoutMath.formatWeight(c.getDouble(4))+" lb volume",16,Ui.INK));body.addView(card);}
+        try(Cursor c=db.rawQuery("SELECT s.id,plan_name,started_at,status,(SELECT COUNT(*) FROM set_results r WHERE r.session_id=s.id),(SELECT COALESCE(SUM(actual_reps*actual_weight),0) FROM set_results r WHERE r.session_id=s.id) FROM sessions s WHERE status<>'active' ORDER BY id DESC LIMIT 30",null)){
+            while(c.moveToNext()){any=true;long sessionId=c.getLong(0);String name=c.getString(1);LinearLayout card=Ui.card(this);card.addView(Ui.heading(this,name));card.addView(Ui.text(this,formatDate(c.getString(2))+"  •  "+c.getString(3),14,Ui.MUTED));card.addView(Ui.text(this,c.getInt(4)+" set entries  •  "+WorkoutMath.formatWeight(c.getDouble(5))+" lb volume",16,Ui.INK));card.setOnLongClickListener(v->{confirmDeleteSession(sessionId,name);return true;});body.addView(card);}
         }
-        try(Cursor c=db.rawQuery("SELECT activity,date,duration_min,distance,unit,intervals,laps FROM cardio ORDER BY id DESC LIMIT 30",null)){
-            while(c.moveToNext()){any=true;LinearLayout card=Ui.card(this);card.addView(Ui.heading(this,c.getString(0)));card.addView(Ui.text(this,c.getString(1)+"  •  "+WorkoutMath.formatWeight(c.getDouble(2))+" minutes",14,Ui.MUTED));String detail=c.getInt(6)>0?c.getInt(6)+" lengths  •  "+WorkoutMath.formatWeight(c.getDouble(3))+" "+c.getString(4):WorkoutMath.formatWeight(c.getDouble(3))+" "+c.getString(4)+(c.getString(5).isBlank()?"":"  •  "+c.getString(5));card.addView(Ui.text(this,detail,16,Ui.INK));body.addView(card);}
+        try(Cursor c=db.rawQuery("SELECT id,activity,date,duration_min,distance,unit,intervals,laps FROM cardio ORDER BY id DESC LIMIT 30",null)){
+            while(c.moveToNext()){any=true;long cardioId=c.getLong(0);String activity=c.getString(1);LinearLayout card=Ui.card(this);card.addView(Ui.heading(this,activity));card.addView(Ui.text(this,c.getString(2)+"  •  "+WorkoutMath.formatWeight(c.getDouble(3))+" minutes",14,Ui.MUTED));String detail=c.getInt(7)>0?c.getInt(7)+" lengths  •  "+WorkoutMath.formatWeight(c.getDouble(4))+" "+c.getString(5):WorkoutMath.formatWeight(c.getDouble(4))+" "+c.getString(5)+(c.getString(6).isBlank()?"":"  •  "+c.getString(6));card.addView(Ui.text(this,detail,16,Ui.INK));card.setOnLongClickListener(v->{confirmDeleteCardio(cardioId,activity);return true;});body.addView(card);}
         }
         if(!any)body.addView(Ui.text(this,"Completed workouts will appear here.",17,Ui.MUTED));
         Button export=Ui.button(this,"Back up or export data",false);export.setOnClickListener(v->startActivity(new android.content.Intent(this,ExportActivity.class)));body.addView(export);
     }
+    private void confirmDeleteSession(long id,String name){new AlertDialog.Builder(this).setTitle("Delete workout?").setMessage("Delete "+name+" and all of its recorded sets?").setNegativeButton("Cancel",null).setPositiveButton("Delete workout",(d,w)->{Db.get(this).deleteSession(id);render();}).show();}
+    private void confirmDeleteCardio(long id,String activity){new AlertDialog.Builder(this).setTitle("Delete workout?").setMessage("Delete this "+activity.toLowerCase(java.util.Locale.ROOT)+" entry?").setNegativeButton("Cancel",null).setPositiveButton("Delete workout",(d,w)->{Db.get(this).deleteCardio(id);render();}).show();}
     private int scalarInt(android.database.sqlite.SQLiteDatabase db,String sql){try(Cursor c=db.rawQuery(sql,null)){return c.moveToFirst()?c.getInt(0):0;}}
     private double scalarDouble(android.database.sqlite.SQLiteDatabase db,String sql){try(Cursor c=db.rawQuery(sql,null)){return c.moveToFirst()?c.getDouble(0):0;}}
     private String formatDate(String iso){try{return LocalDateTime.parse(iso).format(DateTimeFormatter.ofPattern("MMM d, yyyy"));}catch(Exception e){return iso;}}

@@ -62,9 +62,9 @@ public class AppSmokeTest {
 
     @Test public void homeShowsVersionQuoteAndRoutesToTheThreeActivities() {
         try (ActivityController<HomeActivity> home = Robolectric.buildActivity(HomeActivity.class).setup()) {
-            TextView version = findText(home.get().getWindow().getDecorView(), "Version 0.1.9");
+            TextView version = findText(home.get().getWindow().getDecorView(), "Version 0.1.10");
             assertNotNull(version);
-            assertTrue(version.getText().toString().contains("build 10"));
+            assertTrue(version.getText().toString().contains("build 11"));
             assertNotNull(findText(home.get().getWindow().getDecorView(), "James Allen"));
             assertNull(findButton(home.get().getWindow().getDecorView(), "Let's go!"));
             assertRoute(home.get(), "Plan", PlansActivity.class);
@@ -123,6 +123,34 @@ public class AppSmokeTest {
         }
         try (ActivityController<CardioActivity> run = Robolectric.buildActivity(CardioActivity.class).setup()) {
             assertNotNull(findButton(run.get().getWindow().getDecorView(), "Start guided run/walk intervals"));
+        }
+    }
+
+    @Test public void reviewLongPressOffersAndDeletesACompletedWorkout() {
+        Db db = Db.get(app);
+        try (ActivityController<ReviewActivity> review = Robolectric.buildActivity(ReviewActivity.class).setup()) {
+            TextView workout = findText(review.get().getWindow().getDecorView(), "Upper body");
+            assertNotNull(workout);
+            View card = (View) workout.getParent();
+            assertTrue(card.performLongClick());
+            AlertDialog dialog = ShadowAlertDialog.getLatestAlertDialog();
+            assertNotNull(dialog);
+            try (android.database.Cursor cursor = db.getReadableDatabase().rawQuery("SELECT COUNT(*) FROM sessions WHERE id=1", null)) {
+                assertTrue(cursor.moveToFirst());
+                assertEquals(1, cursor.getInt(0));
+            }
+            Button delete = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            assertEquals("Delete workout", delete.getText());
+            delete.performClick();
+            shadowOf(Looper.getMainLooper()).idle();
+            try (android.database.Cursor cursor = db.getReadableDatabase().rawQuery("SELECT COUNT(*) FROM sessions WHERE id=1", null)) {
+                assertTrue(cursor.moveToFirst());
+                assertEquals(0, cursor.getInt(0));
+            }
+            try (android.database.Cursor cursor = db.getReadableDatabase().rawQuery("SELECT COUNT(*) FROM set_results WHERE session_id=1", null)) {
+                assertTrue(cursor.moveToFirst());
+                assertEquals(0, cursor.getInt(0));
+            }
         }
     }
 
