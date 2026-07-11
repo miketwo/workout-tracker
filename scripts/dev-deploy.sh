@@ -59,5 +59,5 @@ apk_windows="$(wslpath -w "$apk")"
 echo "Installing $(basename "$apk") directly from WSL to $serial..."
 windows_adb -s "$serial" install -r "$apk_windows"
 windows_adb -s "$serial" shell am force-stop com.miketwo.workouttracker
-windows_adb -s "$serial" shell am start -W -n com.miketwo.workouttracker/.MainActivity >/dev/null
+windows_adb -s "$serial" shell am start -W -n com.miketwo.workouttracker/.SplashActivity >/dev/null
 echo "Workout Tracker is running on $serial."

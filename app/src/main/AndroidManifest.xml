@@ -25,7 +25,8 @@
         <activity android:name=".WorkoutActivity" android:screenOrientation="portrait" tools:ignore="DiscouragedApi,LockedOrientationActivity" />
         <activity android:name=".PlanEditorActivity" />
         <activity android:name=".PlansActivity" />
-        <activity android:name=".MainActivity" android:exported="true">
+        <activity android:name=".MainActivity" />
+        <activity android:name=".SplashActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

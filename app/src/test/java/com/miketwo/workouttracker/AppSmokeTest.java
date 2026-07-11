@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.TextView;
 
 import androidx.test.core.app.ApplicationProvider;
 
@@ -55,12 +56,32 @@ public class AppSmokeTest {
         }
     }
 
+    @Test public void splashShowsVersionAndOpensHome() {
+        try (ActivityController<SplashActivity> splash = Robolectric.buildActivity(SplashActivity.class).setup()) {
+            TextView version = findText(splash.get().getWindow().getDecorView(), "Version 0.1.1");
+            assertNotNull(version);
+            assertTrue(version.getText().toString().contains("build 2"));
+        }
+    }
+
     private Button findButton(View view, String text) {
         if (view instanceof Button && text.contentEquals(((Button) view).getText())) return (Button) view;
         if (view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) view;
             for (int i=0;i<group.getChildCount();i++) {
                 Button found = findButton(group.getChildAt(i), text);
+                if (found != null) return found;
+            }
+        }
+        return null;
+    }
+
+    private TextView findText(View view, String fragment) {
+        if (view instanceof TextView && ((TextView) view).getText().toString().contains(fragment)) return (TextView) view;
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i=0;i<group.getChildCount();i++) {
+                TextView found = findText(group.getChildAt(i), fragment);
                 if (found != null) return found;
             }
         }
