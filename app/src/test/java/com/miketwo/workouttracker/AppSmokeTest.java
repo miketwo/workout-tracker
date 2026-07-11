@@ -62,9 +62,9 @@ public class AppSmokeTest {
 
     @Test public void splashShowsVersionQuoteAndRoutesToTheThreeActivities() {
         try (ActivityController<SplashActivity> splash = Robolectric.buildActivity(SplashActivity.class).setup()) {
-            TextView version = findText(splash.get().getWindow().getDecorView(), "Version 0.1.6");
+            TextView version = findText(splash.get().getWindow().getDecorView(), "Version 0.1.7");
             assertNotNull(version);
-            assertTrue(version.getText().toString().contains("build 7"));
+            assertTrue(version.getText().toString().contains("build 8"));
             assertNotNull(findText(splash.get().getWindow().getDecorView(), "James Allen"));
             assertNull(findButton(splash.get().getWindow().getDecorView(), "Let's go!"));
             assertRoute(splash.get(), "Plan", PlansActivity.class);
@@ -112,6 +112,16 @@ public class AppSmokeTest {
                 assertEquals(0, cursor.getInt(0));
             }
             assertEquals(0, app.getSharedPreferences("active_workout", 0).getLong("session_id", 0));
+        }
+    }
+
+    @Test public void guidedIntervalsAppearOnlyForRunLogging() {
+        Intent swimIntent = new Intent(app, CardioActivity.class).putExtra("activity", "Swim");
+        try (ActivityController<CardioActivity> swim = Robolectric.buildActivity(CardioActivity.class, swimIntent).setup()) {
+            assertNull(findButton(swim.get().getWindow().getDecorView(), "Start guided run/walk intervals"));
+        }
+        try (ActivityController<CardioActivity> run = Robolectric.buildActivity(CardioActivity.class).setup()) {
+            assertNotNull(findButton(run.get().getWindow().getDecorView(), "Start guided run/walk intervals"));
         }
     }
 

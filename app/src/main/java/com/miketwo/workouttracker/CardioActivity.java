@@ -20,12 +20,12 @@ public class CardioActivity extends Activity {
     private void render(){
         body=Ui.column(this);Ui.page(this,body);Button back=Ui.smallButton(this,"‹ Home");back.setOnClickListener(v->Ui.home(this));body.addView(back);body.addView(Ui.title(this,"Log cardio"));
         body.addView(Ui.text(this,"The phone can stay out of the way. Record the useful totals afterward.",16,Ui.MUTED));
-        Button guided=Ui.button(this,"Start guided run/walk intervals",true);guided.setOnClickListener(v->startActivity(new Intent(this,IntervalActivity.class)));body.addView(guided);
         body.addView(Ui.label(this,"Activity"));activity=spinner(new String[]{"Run","Swim"});String requested=getIntent().getStringExtra("activity");if("Swim".equals(requested))activity.setSelection(1);activity.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){public void onItemSelected(android.widget.AdapterView<?> p,android.view.View v,int pos,long id){renderFields();}public void onNothingSelected(android.widget.AdapterView<?> p){}});body.addView(activity);
         body.addView(Ui.label(this,"Date"));date=input(LocalDate.now().toString(),false);body.addView(date);fields=new LinearLayout(this);fields.setOrientation(LinearLayout.VERTICAL);body.addView(fields);renderFields();
         Button save=Ui.button(this,"Save cardio session",true);save.setOnClickListener(v->save());body.addView(save);
     }
     private void renderFields(){if(fields==null)return;fields.removeAllViews();boolean swim=activity.getSelectedItemPosition()==1;
+        if(!swim){Button guided=Ui.button(this,"Start guided run/walk intervals",true);guided.setOnClickListener(v->startActivity(new Intent(this,IntervalActivity.class)));fields.addView(guided);}
         fields.addView(Ui.label(this,"Duration (minutes)"));duration=input("",true);fields.addView(duration);
         if(swim){fields.addView(Ui.label(this,"Lengths completed"));laps=input("",false);fields.addView(laps);fields.addView(Ui.label(this,"Pool length"));poolLength=input("25",true);fields.addView(poolLength);fields.addView(Ui.label(this,"Pool unit"));unit=spinner(new String[]{"yd","m"});fields.addView(unit);distance=null;intervals=null;}
         else{fields.addView(Ui.label(this,"Distance"));distance=input("",true);fields.addView(distance);fields.addView(Ui.label(this,"Distance unit"));unit=spinner(new String[]{"mi","km"});fields.addView(unit);fields.addView(Ui.label(this,"Intervals used"));intervals=Ui.input(this,"For example: 6 min jog / 2 min walk");intervals.setText(getIntent().getStringExtra("intervals"));fields.addView(intervals);laps=null;poolLength=null;if(getIntent().hasExtra("duration"))duration.setText(WorkoutMath.formatWeight(getIntent().getDoubleExtra("duration",0)));}
