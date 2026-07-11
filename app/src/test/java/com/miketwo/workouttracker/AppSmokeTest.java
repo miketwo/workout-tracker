@@ -59,9 +59,9 @@ public class AppSmokeTest {
 
     @Test public void splashShowsVersionQuoteAndRoutesToTheThreeActivities() {
         try (ActivityController<SplashActivity> splash = Robolectric.buildActivity(SplashActivity.class).setup()) {
-            TextView version = findText(splash.get().getWindow().getDecorView(), "Version 0.1.4");
+            TextView version = findText(splash.get().getWindow().getDecorView(), "Version 0.1.5");
             assertNotNull(version);
-            assertTrue(version.getText().toString().contains("build 5"));
+            assertTrue(version.getText().toString().contains("build 6"));
             assertNotNull(findText(splash.get().getWindow().getDecorView(), "James Allen"));
             assertNull(findButton(splash.get().getWindow().getDecorView(), "Let's go!"));
             assertRoute(splash.get(), "Plan", PlansActivity.class);
@@ -71,6 +71,18 @@ public class AppSmokeTest {
         }
         try (ActivityController<SplashActivity> splash = Robolectric.buildActivity(SplashActivity.class).setup()) {
             assertRoute(splash.get(), "Review", HistoryActivity.class);
+        }
+    }
+
+    @Test public void planHomeReturnsToTheOpeningScreen() {
+        try (ActivityController<PlansActivity> plans = Robolectric.buildActivity(PlansActivity.class).setup()) {
+            Button home = findButton(plans.get().getWindow().getDecorView(), "‹ Home");
+            assertNotNull(home);
+            home.performClick();
+            Intent next = shadowOf(plans.get()).getNextStartedActivity();
+            assertNotNull(next);
+            assertEquals(SplashActivity.class.getName(), next.getComponent().getClassName());
+            assertTrue((next.getFlags() & Intent.FLAG_ACTIVITY_CLEAR_TASK) != 0);
         }
     }
 

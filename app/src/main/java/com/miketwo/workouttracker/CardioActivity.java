@@ -18,7 +18,7 @@ public class CardioActivity extends Activity {
     private Spinner activity,unit; private EditText date,duration,distance,intervals,notes,laps,poolLength; private LinearLayout body,fields;
     @Override public void onCreate(Bundle state){super.onCreate(state);render();}
     private void render(){
-        body=Ui.column(this);Ui.page(this,body);Button back=Ui.smallButton(this,"‹ Home");back.setOnClickListener(v->finish());body.addView(back);body.addView(Ui.title(this,"Log cardio"));
+        body=Ui.column(this);Ui.page(this,body);Button back=Ui.smallButton(this,"‹ Home");back.setOnClickListener(v->Ui.home(this));body.addView(back);body.addView(Ui.title(this,"Log cardio"));
         body.addView(Ui.text(this,"The phone can stay out of the way. Record the useful totals afterward.",16,Ui.MUTED));
         Button guided=Ui.button(this,"Start guided run/walk intervals",true);guided.setOnClickListener(v->startActivity(new Intent(this,IntervalActivity.class)));body.addView(guided);
         body.addView(Ui.label(this,"Activity"));activity=spinner(new String[]{"Run","Swim"});String requested=getIntent().getStringExtra("activity");if("Swim".equals(requested))activity.setSelection(1);activity.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){public void onItemSelected(android.widget.AdapterView<?> p,android.view.View v,int pos,long id){renderFields();}public void onNothingSelected(android.widget.AdapterView<?> p){}});body.addView(activity);
