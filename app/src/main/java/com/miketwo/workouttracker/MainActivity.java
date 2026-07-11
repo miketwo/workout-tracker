@@ -8,9 +8,6 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
 import java.util.List;
 import java.util.Locale;
 
@@ -23,7 +20,6 @@ public class MainActivity extends Activity {
 
     private void render(){
         body=Ui.column(this);Ui.page(this,body);
-        body.addView(Ui.text(this,LocalDate.now().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)),14,Ui.MUTED));
         body.addView(Ui.title(this,"Ready when you are"));
         body.addView(Ui.text(this,"Your plan is already decided. Just take the next step.",17,Ui.MUTED));
         Ui.spacer(body,14);

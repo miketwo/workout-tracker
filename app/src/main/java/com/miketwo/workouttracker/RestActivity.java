@@ -17,7 +17,7 @@ public class RestActivity extends Activity {
     private final Handler handler=new Handler(Looper.getMainLooper());private long endAt;private TextView clock;private boolean ended;
     private final Runnable tick=new Runnable(){@Override public void run(){long left=Math.max(0,endAt-System.currentTimeMillis());clock.setText(format(left));if(left<=0)complete();else handler.postDelayed(this,200);}};
     @Override public void onCreate(Bundle state){super.onCreate(state);int seconds=getIntent().getIntExtra("seconds",90);endAt=state==null?System.currentTimeMillis()+seconds*1000L:state.getLong("end_at");
-        LinearLayout body=Ui.column(this);body.setGravity(Gravity.CENTER);setContentView(body);body.addView(Ui.label(this,"Rest"));clock=Ui.title(this,format(seconds*1000L));clock.setTextSize(72);clock.setGravity(Gravity.CENTER);body.addView(clock);
+        LinearLayout body=Ui.column(this);body.setGravity(Gravity.CENTER);Ui.screen(this,body);body.addView(Ui.label(this,"Rest"));clock=Ui.title(this,format(seconds*1000L));clock.setTextSize(72);clock.setGravity(Gravity.CENTER);body.addView(clock);
         String record=getIntent().getStringExtra("record");if(record!=null){TextView pr=Ui.heading(this,"Personal best ✦\n"+record);pr.setTextColor(Ui.FOREST);pr.setGravity(Gravity.CENTER);body.addView(pr);}
         body.addView(Ui.text(this,"Next up",14,Ui.MUTED));TextView next=Ui.heading(this,getIntent().getStringExtra("next"));next.setGravity(Gravity.CENTER);body.addView(next);Button skip=Ui.button(this,"Skip rest",false);skip.setOnClickListener(v->finish());body.addView(skip);
     }

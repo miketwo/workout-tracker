@@ -30,10 +30,6 @@ public class SplashActivity extends Activity {
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
-        getWindow().setStatusBarColor(Ui.CREAM);
-        getWindow().setNavigationBarColor(Ui.CREAM);
-        getWindow().getDecorView().setSystemUiVisibility(android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
-
         LinearLayout body = Ui.column(this);
         body.setGravity(Gravity.CENTER_HORIZONTAL);
         LinearLayout introduction = new LinearLayout(this);
@@ -70,7 +66,7 @@ public class SplashActivity extends Activity {
         review.setOnClickListener(v -> open(HistoryActivity.class));
         action.addView(review);
         body.addView(action, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
-        setContentView(body);
+        Ui.screen(this, body);
     }
 
     private void open(Class<? extends Activity> destination) {

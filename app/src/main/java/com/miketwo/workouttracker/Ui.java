@@ -9,6 +9,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -21,7 +22,10 @@ final class Ui {
     private Ui() {}
     static int dp(Context c,int value){return (int)(value*c.getResources().getDisplayMetrics().density+.5f);}
     static LinearLayout column(Context c){LinearLayout v=new LinearLayout(c);v.setOrientation(LinearLayout.VERTICAL);v.setPadding(dp(c,20),dp(c,18),dp(c,20),dp(c,32));v.setBackgroundColor(CREAM);return v;}
-    static ScrollView page(Activity a, LinearLayout body){ScrollView s=new ScrollView(a);s.setFillViewport(true);s.addView(body);a.setContentView(s);a.getWindow().setStatusBarColor(CREAM);a.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);return s;}
+    static ScrollView page(Activity a, LinearLayout body){ScrollView s=new ScrollView(a);s.setFillViewport(true);s.addView(body);a.setContentView(s);styleWindow(a);respectSystemBars(s);return s;}
+    static void screen(Activity a, View body){a.setContentView(body);styleWindow(a);respectSystemBars(body);}
+    private static void styleWindow(Activity a){a.getWindow().setStatusBarColor(CREAM);a.getWindow().setNavigationBarColor(CREAM);a.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);}
+    private static void respectSystemBars(View view){final int left=view.getPaddingLeft(),top=view.getPaddingTop(),right=view.getPaddingRight(),bottom=view.getPaddingBottom();view.setOnApplyWindowInsetsListener((v,insets)->{v.setPadding(left,top+insets.getSystemWindowInsetTop(),right,bottom+insets.getSystemWindowInsetBottom());return insets;});view.requestApplyInsets();}
     static TextView text(Context c,String value,int sp,int color){TextView t=new TextView(c);t.setText(value);t.setTextSize(sp);t.setTextColor(color);t.setLineSpacing(0,1.08f);return t;}
     static TextView title(Context c,String value){TextView t=text(c,value,32,INK);t.setTypeface(Typeface.DEFAULT,Typeface.BOLD);t.setPadding(0,0,0,dp(c,8));return t;}
     static TextView heading(Context c,String value){TextView t=text(c,value,21,INK);t.setTypeface(Typeface.DEFAULT,Typeface.BOLD);t.setPadding(0,dp(c,14),0,dp(c,8));return t;}
