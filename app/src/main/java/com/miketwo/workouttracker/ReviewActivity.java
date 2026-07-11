@@ -8,6 +8,7 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 public class ReviewActivity extends Activity {
@@ -20,16 +21,18 @@ public class ReviewActivity extends Activity {
         int week=scalarInt(db,"SELECT COUNT(DISTINCT day) FROM (SELECT substr(started_at,1,10) day FROM sessions WHERE status<>'active' UNION SELECT date day FROM cardio) WHERE day>=date('now','-6 days')");int month=scalarInt(db,"SELECT COUNT(DISTINCT day) FROM (SELECT substr(started_at,1,10) day FROM sessions WHERE status<>'active' UNION SELECT date day FROM cardio) WHERE day>=date('now','start of month')");LinearLayout consistency=Ui.card(this);consistency.addView(Ui.label(this,"Consistency"));consistency.addView(Ui.heading(this,week+" active day"+(week==1?"":"s")+" this week"));consistency.addView(Ui.text(this,month+" active days this month. Every completed session counts.",16,Ui.MUTED));body.addView(consistency);
         body.addView(Ui.heading(this,"Strength by exercise"));
         try(Cursor c=db.rawQuery("SELECT exercise_name,COUNT(DISTINCT session_id),MAX(actual_weight),SUM(actual_reps*actual_weight) FROM set_results WHERE status='complete' GROUP BY exercise_name ORDER BY SUM(actual_reps*actual_weight) DESC",null)){while(c.moveToNext()){LinearLayout card=Ui.card(this);card.addView(Ui.heading(this,c.getString(0)));card.addView(Ui.text(this,c.getInt(1)+" session"+(c.getInt(1)==1?"":"s")+"  •  heaviest "+WorkoutMath.formatWeight(c.getDouble(2))+" lb",15,Ui.MUTED));card.addView(Ui.text(this,WorkoutMath.formatWeight(c.getDouble(3))+" lb total volume",17,Ui.FOREST));body.addView(card);}}
-        body.addView(Ui.heading(this,"Recent activity"));
-        body.addView(Ui.text(this,"Long press a workout to delete it.",14,Ui.MUTED));
+        LinearLayout recent=Ui.column(this);recent.setPadding(Ui.dp(this,16),Ui.dp(this,10),Ui.dp(this,16),Ui.dp(this,10));recent.setBackground(Ui.bg(Ui.MINT,Ui.dp(this,18)));LinearLayout.LayoutParams recentParams=new LinearLayout.LayoutParams(-1,-2);recentParams.setMargins(0,Ui.dp(this,14),0,Ui.dp(this,8));recent.setLayoutParams(recentParams);
+        recent.addView(Ui.heading(this,"Recent activity"));
+        recent.addView(Ui.text(this,"Long press a workout to delete it.",14,Ui.MUTED));
         boolean any=false;
         try(Cursor c=db.rawQuery("SELECT s.id,plan_name,started_at,status,(SELECT COUNT(*) FROM set_results r WHERE r.session_id=s.id),(SELECT COALESCE(SUM(actual_reps*actual_weight),0) FROM set_results r WHERE r.session_id=s.id) FROM sessions s WHERE status<>'active' ORDER BY id DESC LIMIT 30",null)){
-            while(c.moveToNext()){any=true;long sessionId=c.getLong(0);String name=c.getString(1);LinearLayout card=Ui.card(this);card.addView(Ui.heading(this,name));card.addView(Ui.text(this,formatDate(c.getString(2))+"  •  "+c.getString(3),14,Ui.MUTED));card.addView(Ui.text(this,c.getInt(4)+" set entries  •  "+WorkoutMath.formatWeight(c.getDouble(5))+" lb volume",16,Ui.INK));card.setOnLongClickListener(v->{confirmDeleteSession(sessionId,name);return true;});body.addView(card);}
+            while(c.moveToNext()){any=true;long sessionId=c.getLong(0);String name=c.getString(1);LinearLayout card=Ui.card(this);card.addView(Ui.heading(this,formatDate(c.getString(2))));card.addView(Ui.text(this,"Strength  •  "+name+"  •  "+c.getString(3),14,Ui.MUTED));card.addView(Ui.text(this,c.getInt(4)+" set entries  •  "+WorkoutMath.formatWeight(c.getDouble(5))+" lb volume",16,Ui.INK));card.setOnLongClickListener(v->{confirmDeleteSession(sessionId,name);return true;});recent.addView(card);}
         }
         try(Cursor c=db.rawQuery("SELECT id,activity,date,duration_min,distance,unit,intervals,laps FROM cardio ORDER BY id DESC LIMIT 30",null)){
-            while(c.moveToNext()){any=true;long cardioId=c.getLong(0);String activity=c.getString(1);LinearLayout card=Ui.card(this);card.addView(Ui.heading(this,activity));card.addView(Ui.text(this,c.getString(2)+"  •  "+WorkoutMath.formatWeight(c.getDouble(3))+" minutes",14,Ui.MUTED));String detail=c.getInt(7)>0?c.getInt(7)+" lengths  •  "+WorkoutMath.formatWeight(c.getDouble(4))+" "+c.getString(5):WorkoutMath.formatWeight(c.getDouble(4))+" "+c.getString(5)+(c.getString(6).isBlank()?"":"  •  "+c.getString(6));card.addView(Ui.text(this,detail,16,Ui.INK));card.setOnLongClickListener(v->{confirmDeleteCardio(cardioId,activity);return true;});body.addView(card);}
+            while(c.moveToNext()){any=true;long cardioId=c.getLong(0);String activity=c.getString(1);LinearLayout card=Ui.card(this);card.addView(Ui.heading(this,formatDay(c.getString(2))));card.addView(Ui.text(this,activity+"  •  "+WorkoutMath.formatWeight(c.getDouble(3))+" minutes",14,Ui.MUTED));String detail=c.getInt(7)>0?c.getInt(7)+" lengths  •  "+WorkoutMath.formatWeight(c.getDouble(4))+" "+c.getString(5):WorkoutMath.formatWeight(c.getDouble(4))+" "+c.getString(5)+(c.getString(6).isBlank()?"":"  •  "+c.getString(6));card.addView(Ui.text(this,detail,16,Ui.INK));card.setOnLongClickListener(v->{confirmDeleteCardio(cardioId,activity);return true;});recent.addView(card);}
         }
-        if(!any)body.addView(Ui.text(this,"Completed workouts will appear here.",17,Ui.MUTED));
+        if(!any)recent.addView(Ui.text(this,"Completed workouts will appear here.",17,Ui.MUTED));
+        body.addView(recent);
         Button export=Ui.button(this,"Back up or export data",false);export.setOnClickListener(v->startActivity(new android.content.Intent(this,ExportActivity.class)));body.addView(export);
     }
     private void confirmDeleteSession(long id,String name){new AlertDialog.Builder(this).setTitle("Delete workout?").setMessage("Delete "+name+" and all of its recorded sets?").setNegativeButton("Cancel",null).setPositiveButton("Delete workout",(d,w)->{Db.get(this).deleteSession(id);render();}).show();}
@@ -37,4 +40,5 @@ public class ReviewActivity extends Activity {
     private int scalarInt(android.database.sqlite.SQLiteDatabase db,String sql){try(Cursor c=db.rawQuery(sql,null)){return c.moveToFirst()?c.getInt(0):0;}}
     private double scalarDouble(android.database.sqlite.SQLiteDatabase db,String sql){try(Cursor c=db.rawQuery(sql,null)){return c.moveToFirst()?c.getDouble(0):0;}}
     private String formatDate(String iso){try{return LocalDateTime.parse(iso).format(DateTimeFormatter.ofPattern("MMM d, yyyy"));}catch(Exception e){return iso;}}
+    private String formatDay(String iso){try{return LocalDate.parse(iso).format(DateTimeFormatter.ofPattern("MMM d, yyyy"));}catch(Exception e){return iso;}}
 }

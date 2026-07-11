@@ -62,9 +62,9 @@ public class AppSmokeTest {
 
     @Test public void homeShowsVersionQuoteAndRoutesToTheThreeActivities() {
         try (ActivityController<HomeActivity> home = Robolectric.buildActivity(HomeActivity.class).setup()) {
-            TextView version = findText(home.get().getWindow().getDecorView(), "Version 0.1.10");
+            TextView version = findText(home.get().getWindow().getDecorView(), "Version 0.1.11");
             assertNotNull(version);
-            assertTrue(version.getText().toString().contains("build 11"));
+            assertTrue(version.getText().toString().contains("build 12"));
             assertNotNull(findText(home.get().getWindow().getDecorView(), "James Allen"));
             assertNull(findButton(home.get().getWindow().getDecorView(), "Let's go!"));
             assertRoute(home.get(), "Plan", PlansActivity.class);
@@ -151,6 +151,18 @@ public class AppSmokeTest {
                 assertTrue(cursor.moveToFirst());
                 assertEquals(0, cursor.getInt(0));
             }
+        }
+    }
+
+    @Test public void reviewGroupsRecentActivityAndUsesDatesAsCardTitles() {
+        try (ActivityController<ReviewActivity> review = Robolectric.buildActivity(ReviewActivity.class).setup()) {
+            TextView date = findText(review.get().getWindow().getDecorView(), "Jul 9, 2026");
+            assertNotNull(date);
+            assertEquals(21f, date.getTextSize(), .01f);
+            assertNotNull(findText(review.get().getWindow().getDecorView(), "Strength  •  Upper body  •  complete"));
+            assertNotNull(findText(review.get().getWindow().getDecorView(), "Run  •  26 minutes"));
+            View card = (View) date.getParent();
+            assertEquals(Ui.MINT, ((android.graphics.drawable.GradientDrawable) ((View) card.getParent()).getBackground()).getColor().getDefaultColor());
         }
     }
 
