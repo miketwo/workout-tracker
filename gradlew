@@ -118,6 +118,11 @@ esac
 CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
 
 
+# Prefer the project-managed JDK so Gradle never falls back to the system JDK.
+if [ -x "$APP_HOME/.tools/jdk17/bin/java" ] ; then
+    JAVA_HOME=$APP_HOME/.tools/jdk17
+fi
+
 # Determine the Java command to use to start the JVM.
 if [ -n "$JAVA_HOME" ] ; then
     if [ -x "$JAVA_HOME/jre/sh/java" ] ; then

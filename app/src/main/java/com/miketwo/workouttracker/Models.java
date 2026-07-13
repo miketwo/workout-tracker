@@ -33,6 +33,10 @@ final class Models {
         String muscleGroup;
     }
 
+    static final class PackingItem {
+        long id; String workoutType; String name; int position;
+    }
+
     static final class LastSet {
         int reps;
         double weight;

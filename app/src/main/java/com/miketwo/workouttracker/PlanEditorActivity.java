@@ -49,9 +49,26 @@ public class PlanEditorActivity extends Activity {
     }
     private void exerciseDialog(){
         LinearLayout form=Ui.column(this);form.setPadding(Ui.dp(this,18),0,Ui.dp(this,18),0);
-        Spinner catalog=spinner(common);form.addView(catalog);EditText exName=Ui.input(this,"Exercise name");form.addView(exName);Spinner muscle=spinner(groups);form.addView(muscle);catalog.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){public void onItemSelected(android.widget.AdapterView<?> p,android.view.View v,int pos,long id){if(pos>0){exName.setText(common[pos]);String g=groupFor(common[pos]);for(int i=0;i<groups.length;i++)if(groups[i].equals(g))muscle.setSelection(i);}}public void onNothingSelected(android.widget.AdapterView<?> p){}});
-        EditText sets=number("Sets",false,"3");form.addView(sets);EditText reps=number("Target reps",false,"8");form.addView(reps);EditText weight=number("Target weight",true,"0");form.addView(weight);
-        Spinner unit=spinner(new String[]{"lb","kg","bodyweight","assisted lb","assisted kg"});form.addView(unit);EditText timed=number("Timed set seconds (0 for ordinary sets)",false,"0");form.addView(timed);EditText rest=number("Rest seconds after each set",false,"90");form.addView(rest);EditText exNotes=Ui.input(this,"Notes / seat position");form.addView(exNotes);
+        form.addView(Ui.label(this,"Exercise"));
+        Spinner catalog=spinner(common);form.addView(catalog);
+        form.addView(Ui.label(this,"Custom exercise name"));
+        EditText exName=Ui.input(this,"Exercise name");form.addView(exName);
+        form.addView(Ui.label(this,"Muscle group"));
+        Spinner muscle=spinner(groups);form.addView(muscle);catalog.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){public void onItemSelected(android.widget.AdapterView<?> p,android.view.View v,int pos,long id){if(pos>0){exName.setText(common[pos]);String g=groupFor(common[pos]);for(int i=0;i<groups.length;i++)if(groups[i].equals(g))muscle.setSelection(i);}}public void onNothingSelected(android.widget.AdapterView<?> p){}});
+        form.addView(Ui.label(this,"Sets"));
+        EditText sets=number("Sets",false,"3");form.addView(sets);
+        form.addView(Ui.label(this,"Target reps"));
+        EditText reps=number("Target reps",false,"8");form.addView(reps);
+        form.addView(Ui.label(this,"Target weight"));
+        EditText weight=number("Target weight",true,"0");form.addView(weight);
+        form.addView(Ui.label(this,"Weight unit"));
+        Spinner unit=spinner(new String[]{"lb","kg","bodyweight","assisted lb","assisted kg"});form.addView(unit);
+        form.addView(Ui.label(this,"Timed set seconds"));
+        EditText timed=number("0 for ordinary sets",false,"0");form.addView(timed);
+        form.addView(Ui.label(this,"Rest between sets (seconds)"));
+        EditText rest=number("Rest seconds",false,"90");form.addView(rest);
+        form.addView(Ui.label(this,"Notes / seat position"));
+        EditText exNotes=Ui.input(this,"Optional notes");form.addView(exNotes);
         new AlertDialog.Builder(this).setTitle("Add exercise").setView(form).setNegativeButton("Cancel",null).setPositiveButton("Add",(d,w)->{
             if(exName.getText().toString().trim().isEmpty())return;
             db.addExercise(planId,exName.getText().toString().trim(),integer(sets,3),integer(reps,8),decimal(weight,0),(String)unit.getSelectedItem(),exNotes.getText().toString().trim(),integer(rest,90),integer(timed,0),(String)muscle.getSelectedItem());render();

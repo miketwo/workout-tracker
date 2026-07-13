@@ -12,7 +12,9 @@ The computer and Pixel must be on the same Wi-Fi network.
 4. Enter the dialog's IP address and pairing port, followed by its six-digit code.
 5. When prompted again, enter the separate **IP address & port** shown on the main Wireless debugging screen.
 
-Pairing is normally remembered. The deploy script uses Android's local-network discovery to follow port changes automatically. If discovery is unavailable after a reboot or network change, open the main Wireless debugging screen and run:
+Pairing is normally remembered by Windows ADB, while Android may rotate the connection port. The deploy script first reuses any already-connected Wi-Fi transport from the shared Windows ADB server, then tries the saved endpoint and local-network discovery. This makes the connection survive new Codex threads.
+
+If the Windows ADB server has restarted or the phone has changed networks and there is no active transport, open the main Wireless debugging screen and run:
 
 ```bash
 ./scripts/wifi-connect.sh CURRENT_IP:CURRENT_PORT
