@@ -22,13 +22,15 @@ final class Db extends SQLiteOpenHelper {
 
     static synchronized void resetForTests() { if (instance != null) instance.close(); instance = null; }
 
-    private Db(Context context) { super(context, NAME, null, 1); }
+    private Db(Context context) { super(context, NAME, null, 2); }
 
     @Override public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE plans (id INTEGER PRIMARY KEY, name TEXT NOT NULL, weekday INTEGER NOT NULL DEFAULT 1, type TEXT NOT NULL DEFAULT 'Strength', notes TEXT NOT NULL DEFAULT '', archived INTEGER NOT NULL DEFAULT 0)");
         db.execSQL("CREATE TABLE exercises (id INTEGER PRIMARY KEY, plan_id INTEGER NOT NULL, name TEXT NOT NULL, position INTEGER NOT NULL, sets INTEGER NOT NULL DEFAULT 3, reps INTEGER NOT NULL DEFAULT 8, weight REAL NOT NULL DEFAULT 0, unit TEXT NOT NULL DEFAULT 'lb', duration_seconds INTEGER NOT NULL DEFAULT 0, distance REAL NOT NULL DEFAULT 0, notes TEXT NOT NULL DEFAULT '', rest_seconds INTEGER NOT NULL DEFAULT 90, bodyweight INTEGER NOT NULL DEFAULT 0, assistance INTEGER NOT NULL DEFAULT 0, muscle_group TEXT NOT NULL DEFAULT '', FOREIGN KEY(plan_id) REFERENCES plans(id))");
         db.execSQL("CREATE TABLE sessions (id INTEGER PRIMARY KEY, plan_id INTEGER, plan_name TEXT NOT NULL, type TEXT NOT NULL, started_at TEXT NOT NULL, ended_at TEXT, status TEXT NOT NULL DEFAULT 'active', notes TEXT NOT NULL DEFAULT '')");
         db.execSQL("CREATE TABLE set_results (id INTEGER PRIMARY KEY, session_id INTEGER NOT NULL, exercise_id INTEGER, exercise_name TEXT NOT NULL, exercise_position INTEGER NOT NULL, set_number INTEGER NOT NULL, target_reps INTEGER NOT NULL, target_weight REAL NOT NULL, target_duration_seconds INTEGER NOT NULL DEFAULT 0, actual_reps INTEGER NOT NULL, actual_weight REAL NOT NULL, actual_duration_seconds INTEGER NOT NULL DEFAULT 0, rir INTEGER NOT NULL DEFAULT -1, status TEXT NOT NULL DEFAULT 'complete', created_at TEXT NOT NULL, FOREIGN KEY(session_id) REFERENCES sessions(id))");
+        createPackingItemsTable(db);
+        seedPackingItems(db);
         db.execSQL("CREATE TABLE cardio (id INTEGER PRIMARY KEY, activity TEXT NOT NULL, date TEXT NOT NULL, duration_min REAL NOT NULL DEFAULT 0, distance REAL NOT NULL DEFAULT 0, unit TEXT NOT NULL DEFAULT 'mi', intervals TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '', laps INTEGER NOT NULL DEFAULT 0, pool_length REAL NOT NULL DEFAULT 0)");
         db.execSQL("CREATE INDEX idx_results_session ON set_results(session_id)");
         db.execSQL("CREATE INDEX idx_results_exercise ON set_results(exercise_name)");
@@ -89,7 +91,21 @@ final class Db extends SQLiteOpenHelper {
         db.insertOrThrow("exercises", null, v);
     }
 
-    @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {}
+    @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        if (oldVersion < 2) { createPackingItemsTable(db); seedPackingItems(db); }
+    }
+    private void createPackingItemsTable(SQLiteDatabase db) { db.execSQL("CREATE TABLE IF NOT EXISTS packing_items (id INTEGER PRIMARY KEY, workout_type TEXT NOT NULL, name TEXT NOT NULL, position INTEGER NOT NULL)"); }
+
+    private void seedPackingItems(SQLiteDatabase db) {
+        seedPackingType(db, "Strength", new String[]{"Athletic shirt", "Shorts", "Workout shoes", "Small sweat towel"});
+        seedPackingType(db, "Run", new String[]{"Running shoes", "Shorts", "Athletic shirt", "AirPods / music", "Small sweat towel"});
+        seedPackingType(db, "Swim", new String[]{"Swim trunks", "Goggles", "Large towel", "Swim cap", "Pool shoes"});
+    }
+    private void seedPackingType(SQLiteDatabase db, String type, String[] names) {
+        try (Cursor c = db.rawQuery("SELECT COUNT(*) FROM packing_items WHERE workout_type=?", new String[]{type})) { if (c.moveToFirst() && c.getInt(0) > 0) return; }
+        for (int i=0; i<names.length; i++) { ContentValues v=new ContentValues(); v.put("workout_type",type); v.put("name",names[i]); v.put("position",i); db.insertOrThrow("packing_items",null,v); }
+
+    }
 
     List<Models.Plan> plans() {
         ArrayList<Models.Plan> out = new ArrayList<>();
@@ -206,6 +222,18 @@ final class Db extends SQLiteOpenHelper {
         }
         return null;
     }
+
+    List<Models.PackingItem> packingItems(String workoutType) {
+        ArrayList<Models.PackingItem> out=new ArrayList<>();
+        try (Cursor c=getReadableDatabase().rawQuery("SELECT id,workout_type,name,position FROM packing_items WHERE workout_type=? ORDER BY position,id",new String[]{workoutType})) {
+            while(c.moveToNext()){Models.PackingItem item=new Models.PackingItem();item.id=c.getLong(0);item.workoutType=c.getString(1);item.name=c.getString(2);item.position=c.getInt(3);out.add(item);}
+        } return out;
+    }
+    void addPackingItem(String workoutType,String name) {
+        int position=0;try(Cursor c=getReadableDatabase().rawQuery("SELECT COALESCE(MAX(position)+1,0) FROM packing_items WHERE workout_type=?",new String[]{workoutType})){if(c.moveToFirst())position=c.getInt(0);}
+        ContentValues v=new ContentValues();v.put("workout_type",workoutType);v.put("name",name);v.put("position",position);getWritableDatabase().insertOrThrow("packing_items",null,v);
+    }
+    void deletePackingItem(long id){getWritableDatabase().delete("packing_items","id=?",new String[]{String.valueOf(id)});}
 
     int completedSetCount(long sessionId) {
         try(Cursor c=getReadableDatabase().rawQuery("SELECT COUNT(*) FROM set_results WHERE session_id=?",new String[]{String.valueOf(sessionId)})){return c.moveToFirst()?c.getInt(0):0;}

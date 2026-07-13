@@ -35,6 +35,11 @@ public class WorkoutDashboardActivity extends Activity {
             Button start=Ui.button(this,today.type.equals("Strength")?"Start today’s workout":"Log today’s "+today.type.toLowerCase(Locale.getDefault()),true);
             if(today.type.equals("Strength")) start.setOnClickListener(v->startWorkout(today.id)); else start.setOnClickListener(v->startActivity(new Intent(this,CardioActivity.class).putExtra("activity",today.type)));
             card.addView(start);
+            LinearLayout actions=Ui.row(this);
+            Button view=Ui.smallButton(this,"View plan");Ui.weighted(view,1);view.setOnClickListener(v->viewPlan(today.id));actions.addView(view);
+            View gap=new View(this);actions.addView(gap,new LinearLayout.LayoutParams(Ui.dp(this,10),1));
+            Button packing=Ui.smallButton(this,"Packing list");Ui.weighted(packing,1);packing.setOnClickListener(v->viewPackingChecklist(today.type));actions.addView(packing);
+            card.addView(actions);
         } else {
             card.addView(Ui.text(this,"Choose another workout below or assign a plan to this weekday.",16,Ui.MUTED));
         }
@@ -43,9 +48,13 @@ public class WorkoutDashboardActivity extends Activity {
         body.addView(Ui.heading(this,"Choose another workout"));
         List<Models.Plan> plans=db.plans();
         for(Models.Plan p:plans){
-            Button b=Ui.smallButton(this,p.name+"  ·  "+p.type);
-            b.setOnClickListener(v->{if(p.type.equals("Strength"))startWorkout(p.id);else startActivity(new Intent(this,CardioActivity.class).putExtra("activity",p.type));});
-            body.addView(b);
+            LinearLayout optionCard=Ui.card(this);
+            optionCard.addView(Ui.heading(this,p.name));
+            optionCard.addView(Ui.text(this,p.type,15,Ui.MUTED));
+            Button view=Ui.smallButton(this,"View plan");view.setOnClickListener(v->viewPlan(p.id));optionCard.addView(view);
+            Button start=Ui.smallButton(this,p.type.equals("Strength")?"Start workout":"Log "+p.type.toLowerCase(Locale.getDefault()));
+            start.setOnClickListener(v->{if(p.type.equals("Strength"))startWorkout(p.id);else startActivity(new Intent(this,CardioActivity.class).putExtra("activity",p.type));});optionCard.addView(start);
+            body.addView(optionCard);
         }
         Ui.spacer(body,12);
         LinearLayout nav=Ui.row(this);
@@ -58,4 +67,6 @@ public class WorkoutDashboardActivity extends Activity {
     }
 
     private void startWorkout(long planId){startActivity(new Intent(this,WorkoutActivity.class).putExtra("plan_id",planId));}
+    private void viewPlan(long planId){startActivity(new Intent(this,PlanDetailActivity.class).putExtra("plan_id",planId));}
+    private void viewPackingChecklist(String workoutType){startActivity(new Intent(this,PackingChecklistActivity.class).putExtra("workout_type",workoutType));}
 }

@@ -21,9 +21,13 @@
         <service android:name=".IntervalService" android:exported="false" android:foregroundServiceType="specialUse">
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="User-started run/walk interval timer with locked-screen cues" />
         </service>
+        <activity android:name=".PackingChecklistActivity" />
+        <activity android:name=".PackingListEditorActivity" />
+        <activity android:name=".PackingListsActivity" />
         <activity android:name=".CardioActivity" />
         <activity android:name=".WorkoutActivity" android:screenOrientation="portrait" tools:ignore="DiscouragedApi,LockedOrientationActivity" />
         <activity android:name=".PlanEditorActivity" />
+        <activity android:name=".PlanDetailActivity" />
         <activity android:name=".PlansActivity" />
         <activity android:name=".WorkoutDashboardActivity" />
         <activity android:name=".HomeActivity" android:exported="true">

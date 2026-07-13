@@ -48,10 +48,13 @@ find_usb_device() {
 }
 
 connect_saved_wifi_device() {
-  local saved="" discovered="" endpoint
+  local saved="" connected="" discovered="" endpoint
   [[ -f "$WIFI_DEVICE_FILE" ]] && saved="$(tr -d '[:space:]' < "$WIFI_DEVICE_FILE")"
+  # ADB on Windows persists across Codex sessions. Prefer its live Wi-Fi transport
+  # over the last saved port because Android may rotate that port at any time.
+  connected="$(windows_adb devices 2>/dev/null | tr -d '\r' | awk '$2=="device" && $1 ~ /:/ && $1 !~ /^emulator-/ {print $1; exit}')"
   discovered="$(windows_adb mdns services 2>/dev/null | tr -d '\r' | awk '$2=="_adb-tls-connect._tcp" && $3 ~ /:/ {print $3; exit}')"
-  for endpoint in "$saved" "$discovered"; do
+  for endpoint in "$connected" "$saved" "$discovered"; do
     [[ -n "$endpoint" ]] || continue
     windows_adb connect "$endpoint" >/dev/null 2>&1 || true
     if windows_adb -s "$endpoint" get-state >/dev/null 2>&1; then

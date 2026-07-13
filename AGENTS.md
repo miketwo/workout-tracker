@@ -1,5 +1,13 @@
 # Workout Tracker development instructions
 
+## Android toolchain
+
+This repository manages its required JDK 17 at `.tools/jdk17`. The Gradle wrapper
+selects that JDK before it starts Gradle, so plain `./gradlew` commands are supported
+without discovering or exporting `JAVA_HOME`. If the JDK has not been bootstrapped,
+run `./scripts/bootstrap-android.sh`; for the normal verified release path, use
+`./scripts/build-apk.sh`.
+
 The primary development target is the owner's Pixel over Android Wireless Debugging. The Windows Android emulator is the fallback test target.
 
 For requested application changes:
