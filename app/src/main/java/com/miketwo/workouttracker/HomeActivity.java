@@ -42,6 +42,13 @@ public class HomeActivity extends Activity {
         TextView version = Ui.text(this, "Version " + BuildConfig.VERSION_NAME + "  ·  build " + BuildConfig.VERSION_CODE, 17, Ui.MUTED);
         version.setGravity(Gravity.CENTER);
         introduction.addView(version);
+        TextView deployed = Ui.text(this, "Deployed " + BuildConfig.DEPLOYMENT_STAMP, 13, Ui.MUTED);
+        deployed.setGravity(Gravity.CENTER);
+        introduction.addView(deployed);
+        TextView illustrationCredit = Ui.text(this, "Exercise illustrations © Everkinetic · CC BY-SA 3.0 · Wikimedia Commons", 12, Ui.MUTED);
+        illustrationCredit.setGravity(Gravity.CENTER);
+        illustrationCredit.setPadding(0, Ui.dp(this, 6), 0, 0);
+        introduction.addView(illustrationCredit);
         Ui.spacer(introduction, 34);
         TextView quote = Ui.text(this, "“" + nextQuote() + "”", 21, Ui.INK);
         quote.setGravity(Gravity.CENTER);
@@ -65,6 +72,9 @@ public class HomeActivity extends Activity {
         Button review = Ui.iconButton(this, "Review", R.drawable.ic_review, true);
         review.setOnClickListener(v -> open(ReviewActivity.class));
         action.addView(review);
+        Button profile = Ui.smallButton(this, "Profile");
+        profile.setOnClickListener(v -> open(ProfileActivity.class));
+        action.addView(profile);
         body.addView(action, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         Ui.screen(this, body);
     }

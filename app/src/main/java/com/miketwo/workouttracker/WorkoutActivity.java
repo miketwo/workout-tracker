@@ -5,7 +5,6 @@ import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.InputType;
-import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.content.Context;
 import android.widget.ArrayAdapter;
@@ -25,9 +24,10 @@ public class WorkoutActivity extends Activity {
     private EditText repsInput,weightInput; private Spinner rirInput; private SharedPreferences state; private int timedCompleteSeconds;
 
     @Override public void onCreate(Bundle bundle){
-        super.onCreate(bundle);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);db=Db.get(this);state=getSharedPreferences("active_workout",MODE_PRIVATE);
+        super.onCreate(bundle);db=Db.get(this);state=getSharedPreferences("active_workout",MODE_PRIVATE);
         long planId=getIntent().getLongExtra("plan_id",0);plan=db.plan(planId);if(plan==null){finish();return;}
-        if(state.getLong("plan_id",-1)==planId&&state.getLong("session_id",0)>0){sessionId=state.getLong("session_id",0);exerciseIndex=state.getInt("exercise",0);setIndex=state.getInt("set",0);for(Models.Exercise e:plan.exercises)e.sets+=state.getInt("extra_"+e.id,0);}else{state.edit().clear().apply();sessionId=db.beginSession(plan);exerciseIndex=0;setIndex=0;persist();}
+        if(state.getLong("plan_id",-1)==planId&&state.getLong("session_id",0)>0){sessionId=state.getLong("session_id",0);exerciseIndex=state.getInt("exercise",0);setIndex=state.getInt("set",0);}else{state.edit().clear().apply();sessionId=db.beginSession(plan);exerciseIndex=0;setIndex=0;persist();}
+        plan.exercises.clear();plan.exercises.addAll(db.sessionExercises(sessionId));for(Models.Exercise e:plan.exercises)e.sets+=state.getInt("extra_"+e.id,0);
         render();
     }
 
@@ -45,8 +45,8 @@ public class WorkoutActivity extends Activity {
         ProgressBar progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setMax(totalSets());progress.setProgress(position());progress.setMinimumHeight(Ui.dp(this,12));body.addView(progress);
         body.addView(Ui.text(this,position()+" of "+totalSets()+" planned sets complete",14,Ui.MUTED));
 
-        LinearLayout card=Ui.card(this);card.addView(Ui.label(this,"Set "+(setIndex+1)+" of "+e.sets));card.addView(Ui.title(this,e.name));
-        String target=e.bodyweight?"Bodyweight":WorkoutMath.formatWeight(e.weight)+" "+e.unit;card.addView(Ui.text(this,e.durationSeconds>0?"Target  •  "+e.durationSeconds+" seconds":"Target  •  "+e.reps+" reps @ "+target,20,Ui.FOREST));
+        LinearLayout card=Ui.card(this);card.addView(Ui.label(this,"Set "+(setIndex+1)+" of "+e.sets));card.addView(Ui.exerciseHeader(this,e.name,e.name,30));
+        String target=e.bodyweight?"Bodyweight":WorkoutMath.formatWeight(e.weight)+" "+e.unit;String targetLine=e.durationSeconds>0?"Target  •  "+e.durationSeconds+" seconds":"Target  •  "+e.reps+" reps @ "+target; if(e.assistance){Models.Profile p=db.profile();targetLine+=" assistance  •  net "+WorkoutMath.formatWeight(WorkoutMath.effectiveLoad(e.loadMode,p.bodyWeight,e.weight))+" "+e.unit;}card.addView(Ui.text(this,targetLine,20,Ui.FOREST));
         if(!e.notes.isBlank())card.addView(Ui.text(this,e.notes,16,Ui.MUTED));
         Models.LastSet last=db.lastSet(e.name,setIndex+1,sessionId);if(last!=null){String effort=last.rir>=0?"  •  "+last.rir+" RIR":"";card.addView(Ui.text(this,"Last time  "+last.reps+" reps @ "+WorkoutMath.formatWeight(last.weight)+" "+e.unit+effort,15,Ui.MUTED));}
         body.addView(card);
@@ -59,7 +59,8 @@ public class WorkoutActivity extends Activity {
         Button skip=Ui.button(this,"Skip this set",false);skip.setOnClickListener(v->record("skipped"));body.addView(skip);
         Button extra=Ui.smallButton(this,"Add an extra set");extra.setOnClickListener(v->{e.sets++;state.edit().putInt("extra_"+e.id,state.getInt("extra_"+e.id,0)+1).apply();render();});body.addView(extra);
         Button skipExercise=Ui.smallButton(this,"Skip the rest of this exercise");skipExercise.setOnClickListener(v->skipExercise());body.addView(skipExercise);
-        if(exerciseIndex<plan.exercises.size()-1){if(setIndex==0){Button unavailable=Ui.smallButton(this,"Machine busy — choose another exercise");unavailable.setOnClickListener(v->chooseAnother());body.addView(unavailable);}body.addView(Ui.text(this,"Next up  •  "+plan.exercises.get(exerciseIndex+1).name,14,Ui.MUTED));}
+        if(setIndex==0){Button add=Ui.smallButton(this,"Add an exercise now");add.setOnClickListener(v->addExerciseNow());body.addView(add);}
+        if(exerciseIndex<plan.exercises.size()-1){if(setIndex==0){Button unavailable=Ui.smallButton(this,"Machine busy — choose another exercise");unavailable.setOnClickListener(v->chooseAnother());body.addView(unavailable);}Models.Exercise next=plan.exercises.get(exerciseIndex+1);LinearLayout nextRow=Ui.exerciseHeader(this,next.name,"Next up  •  "+next.name,14);nextRow.setPadding(0,Ui.dp(this,6),0,0);body.addView(nextRow);}
     }
 
     private LinearLayout stepper(EditText input,int amount){
@@ -72,7 +73,7 @@ public class WorkoutActivity extends Activity {
 
     private void record(String status){
         Models.Exercise e=plan.exercises.get(exerciseIndex);int actualReps=status.equals("skipped")?0:reps();double actualWeight=status.equals("skipped")?0:decimal(weightInput,e.weight);
-        String record=status.equals("complete")?db.personalRecord(e.name,actualReps,actualWeight):null;
+        Models.Profile profile=db.profile();if(e.assistance&&profile.bodyWeight<=0){Toast.makeText(this,"Add your body weight to record assisted bodyweight work",Toast.LENGTH_LONG).show();startActivity(new android.content.Intent(this,ProfileActivity.class));return;}double effective=e.bodyweight?profile.bodyWeight:WorkoutMath.effectiveLoad(e.loadMode,profile.bodyWeight,actualWeight);String record=status.equals("complete")?db.personalRecord(e.name,actualReps,WorkoutMath.pounds(effective,e.unit)):null;
         boolean hasMore=exerciseIndex<plan.exercises.size()-1||setIndex<e.sets-1;
         String next=setIndex<e.sets-1?e.name+" — set "+(setIndex+2):exerciseIndex<plan.exercises.size()-1?plan.exercises.get(exerciseIndex+1).name:"Workout complete";
         db.recordSet(sessionId,e,setIndex+1,actualReps,actualWeight,rir(),status,timedCompleteSeconds);
@@ -85,14 +86,15 @@ public class WorkoutActivity extends Activity {
     @Override protected void onActivityResult(int request,int result,android.content.Intent data){super.onActivityResult(request,result,data);if(request==77&&result==RESULT_OK){timedCompleteSeconds=data==null?0:data.getIntExtra("elapsed",0);render();}}
     private void undo(){if(position()==0)return;db.undoLastSet(sessionId);if(setIndex>0)setIndex--;else{exerciseIndex=Math.max(0,exerciseIndex-1);setIndex=plan.exercises.get(exerciseIndex).sets-1;}persist();render();Toast.makeText(this,"Last entry undone",Toast.LENGTH_SHORT).show();}
     private void chooseAnother(){if(exerciseIndex>=plan.exercises.size()-1)return;String[] names=new String[plan.exercises.size()-exerciseIndex-1];for(int i=0;i<names.length;i++)names[i]=plan.exercises.get(exerciseIndex+i+1).name;new AlertDialog.Builder(this).setTitle("Do which exercise next?").setItems(names,(d,which)->{Collections.swap(plan.exercises,exerciseIndex,exerciseIndex+which+1);render();Toast.makeText(this,"Order adjusted for this workout only",Toast.LENGTH_SHORT).show();}).setNegativeButton("Cancel",null).show();}
+    private void addExerciseNow(){LinearLayout form=Ui.column(this);EditText name=Ui.input(this,"Exercise name");EditText sets=numeric("3",false),reps=numeric("8",false),weight=numeric("0",true);Spinner unit=new Spinner(this);unit.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,new String[]{"lb","kg","assisted lb","assisted kg","bodyweight"}));form.addView(Ui.label(this,"Exercise"));form.addView(name);form.addView(Ui.label(this,"Sets"));form.addView(sets);form.addView(Ui.label(this,"Target reps"));form.addView(reps);form.addView(Ui.label(this,"Machine / target weight"));form.addView(weight);form.addView(Ui.label(this,"Load type"));form.addView(unit);new AlertDialog.Builder(this).setTitle("Add to this workout").setView(form).setNegativeButton("Cancel",null).setPositiveButton("Add",(d,w)->{if(name.getText().toString().trim().isEmpty())return;Models.Exercise e=new Models.Exercise();e.name=name.getText().toString().trim();e.sets=(int)decimal(sets,3);e.reps=(int)decimal(reps,8);e.weight=decimal(weight,0);e.unit=(String)unit.getSelectedItem();e.bodyweight="bodyweight".equals(e.unit);e.assistance=e.unit.startsWith("assisted");if(e.assistance)e.unit=e.unit.endsWith("kg")?"kg":"lb";e.loadMode=e.assistance?WorkoutMath.LOAD_COUNTERBALANCED:e.bodyweight?WorkoutMath.LOAD_BODYWEIGHT:WorkoutMath.LOAD_STANDARD;e.muscleGroup="Other";db.addSessionExercise(sessionId,e,exerciseIndex+1);plan.exercises.clear();plan.exercises.addAll(db.sessionExercises(sessionId));render();}).show();}
     private void skipExercise(){Models.Exercise e=plan.exercises.get(exerciseIndex);for(int s=setIndex;s<e.sets;s++)db.recordSet(sessionId,e,s+1,0,0,-1,"skipped");exerciseIndex++;setIndex=0;persist();if(exerciseIndex>=plan.exercises.size())finishWorkout("complete");else render();}
     private void hideKeyboard(){((InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(body.getWindowToken(),0);}
 
     private void endDialog(){
         EditText note=Ui.input(this,"Optional workout note");
-        new AlertDialog.Builder(this).setTitle("End this workout?").setMessage("Save completed work, or discard this workout entirely.").setView(note).setNegativeButton("Keep going",null).setNeutralButton("Quit without saving",(d,w)->{db.discardSession(sessionId);clearAndExit();}).setPositiveButton("Save & end",(d,w)->{db.finishSession(sessionId,"incomplete",note.getText().toString().trim());clearAndExit();}).show();
+        new AlertDialog.Builder(this).setTitle("End this workout?").setMessage("Save completed work, or discard this workout entirely.").setView(note).setNegativeButton("Keep going",null).setNeutralButton("Quit without saving",(d,w)->{db.discardSession(sessionId);clearAndExit();}).setPositiveButton("Save & end",(d,w)->{db.finishSession(sessionId,"incomplete",note.getText().toString().trim());clearAndExit();startActivity(new android.content.Intent(this,WorkoutSummaryActivity.class).putExtra("session_id",sessionId));}).show();
     }
-    private void finishWorkout(String status){if(completionShown)return;completionShown=true;EditText note=Ui.input(this,"Optional workout note");new AlertDialog.Builder(this).setCancelable(false).setTitle("Workout complete").setMessage(db.completedSetCount(sessionId)+" set entries recorded. Nice work showing up.").setView(note).setPositiveButton("View history",(d,w)->{db.finishSession(sessionId,status,note.getText().toString().trim());clearAndExit();startActivity(new android.content.Intent(this,ReviewActivity.class));}).setNegativeButton("Done",(d,w)->{db.finishSession(sessionId,status,note.getText().toString().trim());clearAndExit();}).show();}
+    private void finishWorkout(String status){if(completionShown)return;completionShown=true;EditText note=Ui.input(this,"Optional workout note");new AlertDialog.Builder(this).setCancelable(false).setTitle("Workout complete").setMessage(db.completedSetCount(sessionId)+" set entries recorded. Nice work showing up.").setView(note).setPositiveButton("View summary",(d,w)->{db.finishSession(sessionId,status,note.getText().toString().trim());clearAndExit();startActivity(new android.content.Intent(this,WorkoutSummaryActivity.class).putExtra("session_id",sessionId));}).setNegativeButton("Done",(d,w)->{db.finishSession(sessionId,status,note.getText().toString().trim());clearAndExit();}).show();}
     private void clearAndExit(){state.edit().clear().apply();finish();}
     private void showEmpty(){LinearLayout b=Ui.column(this);Ui.page(this,b);b.addView(Ui.title(this,"This plan is empty"));b.addView(Ui.text(this,"Add exercises to the plan before starting it.",17,Ui.MUTED));Button done=Ui.button(this,"Back",true);done.setOnClickListener(v->{db.discardSession(sessionId);clearAndExit();});b.addView(done);}
     @Override public void onBackPressed(){endDialog();}

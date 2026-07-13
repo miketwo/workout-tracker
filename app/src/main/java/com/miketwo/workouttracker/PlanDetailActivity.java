@@ -36,7 +36,7 @@ public class PlanDetailActivity extends Activity {
         int index = 1;
         for (Models.Exercise exercise : plan.exercises) {
             LinearLayout card = Ui.card(this);
-            card.addView(Ui.heading(this, index++ + ". " + exercise.name));
+            card.addView(Ui.exerciseHeader(this, exercise.name, index++ + ". " + exercise.name, 21));
             String target = exercise.durationSeconds > 0
                     ? exercise.sets + " sets × " + exercise.durationSeconds + " seconds"
                     : exercise.sets + " sets × " + exercise.reps + " reps @ " + targetWeight(exercise);

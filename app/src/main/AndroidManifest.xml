@@ -13,6 +13,9 @@
         android:label="Workout Tracker"
         android:theme="@style/AppTheme"
         android:supportsRtl="true">
+        <activity android:name=".ProfileActivity" />
+        <activity android:name=".WorkoutSummaryActivity" />
+        <activity android:name=".WorkoutLogEditorActivity" />
         <activity android:name=".ReviewActivity" />
         <activity android:name=".ExportActivity" />
         <activity android:name=".RestActivity" android:screenOrientation="portrait" tools:ignore="DiscouragedApi,LockedOrientationActivity" />

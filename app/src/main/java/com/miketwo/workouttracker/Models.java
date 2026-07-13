@@ -30,7 +30,13 @@ final class Models {
         int restSeconds;
         boolean bodyweight;
         boolean assistance;
+        String loadMode = "standard";
         String muscleGroup;
+    }
+
+    static final class Profile {
+        double bodyWeight;
+        String unit = "lb";
     }
 
     static final class PackingItem {

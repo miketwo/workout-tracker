@@ -22,13 +22,15 @@ final class Db extends SQLiteOpenHelper {
 
     static synchronized void resetForTests() { if (instance != null) instance.close(); instance = null; }
 
-    private Db(Context context) { super(context, NAME, null, 2); }
+    private Db(Context context) { super(context, NAME, null, 5); }
 
     @Override public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE plans (id INTEGER PRIMARY KEY, name TEXT NOT NULL, weekday INTEGER NOT NULL DEFAULT 1, type TEXT NOT NULL DEFAULT 'Strength', notes TEXT NOT NULL DEFAULT '', archived INTEGER NOT NULL DEFAULT 0)");
-        db.execSQL("CREATE TABLE exercises (id INTEGER PRIMARY KEY, plan_id INTEGER NOT NULL, name TEXT NOT NULL, position INTEGER NOT NULL, sets INTEGER NOT NULL DEFAULT 3, reps INTEGER NOT NULL DEFAULT 8, weight REAL NOT NULL DEFAULT 0, unit TEXT NOT NULL DEFAULT 'lb', duration_seconds INTEGER NOT NULL DEFAULT 0, distance REAL NOT NULL DEFAULT 0, notes TEXT NOT NULL DEFAULT '', rest_seconds INTEGER NOT NULL DEFAULT 90, bodyweight INTEGER NOT NULL DEFAULT 0, assistance INTEGER NOT NULL DEFAULT 0, muscle_group TEXT NOT NULL DEFAULT '', FOREIGN KEY(plan_id) REFERENCES plans(id))");
+        db.execSQL("CREATE TABLE exercises (id INTEGER PRIMARY KEY, plan_id INTEGER NOT NULL, name TEXT NOT NULL, position INTEGER NOT NULL, sets INTEGER NOT NULL DEFAULT 3, reps INTEGER NOT NULL DEFAULT 8, weight REAL NOT NULL DEFAULT 0, unit TEXT NOT NULL DEFAULT 'lb', duration_seconds INTEGER NOT NULL DEFAULT 0, distance REAL NOT NULL DEFAULT 0, notes TEXT NOT NULL DEFAULT '', rest_seconds INTEGER NOT NULL DEFAULT 90, bodyweight INTEGER NOT NULL DEFAULT 0, assistance INTEGER NOT NULL DEFAULT 0, load_mode TEXT NOT NULL DEFAULT 'standard', muscle_group TEXT NOT NULL DEFAULT '', FOREIGN KEY(plan_id) REFERENCES plans(id))");
         db.execSQL("CREATE TABLE sessions (id INTEGER PRIMARY KEY, plan_id INTEGER, plan_name TEXT NOT NULL, type TEXT NOT NULL, started_at TEXT NOT NULL, ended_at TEXT, status TEXT NOT NULL DEFAULT 'active', notes TEXT NOT NULL DEFAULT '')");
         db.execSQL("CREATE TABLE set_results (id INTEGER PRIMARY KEY, session_id INTEGER NOT NULL, exercise_id INTEGER, exercise_name TEXT NOT NULL, exercise_position INTEGER NOT NULL, set_number INTEGER NOT NULL, target_reps INTEGER NOT NULL, target_weight REAL NOT NULL, target_duration_seconds INTEGER NOT NULL DEFAULT 0, actual_reps INTEGER NOT NULL, actual_weight REAL NOT NULL, actual_duration_seconds INTEGER NOT NULL DEFAULT 0, rir INTEGER NOT NULL DEFAULT -1, status TEXT NOT NULL DEFAULT 'complete', created_at TEXT NOT NULL, FOREIGN KEY(session_id) REFERENCES sessions(id))");
+        createProfileAndSessionTables(db);
+        addResultColumns(db);
         createPackingItemsTable(db);
         seedPackingItems(db);
         db.execSQL("CREATE TABLE cardio (id INTEGER PRIMARY KEY, activity TEXT NOT NULL, date TEXT NOT NULL, duration_min REAL NOT NULL DEFAULT 0, distance REAL NOT NULL DEFAULT 0, unit TEXT NOT NULL DEFAULT 'mi', intervals TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '', laps INTEGER NOT NULL DEFAULT 0, pool_length REAL NOT NULL DEFAULT 0)");
@@ -93,6 +95,25 @@ final class Db extends SQLiteOpenHelper {
 
     @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         if (oldVersion < 2) { createPackingItemsTable(db); seedPackingItems(db); }
+        if (oldVersion < 3) { createProfileAndSessionTables(db); }
+        if (oldVersion < 4) { addResultColumns(db); }
+        if (oldVersion < 5) {
+            db.execSQL("ALTER TABLE exercises ADD COLUMN load_mode TEXT NOT NULL DEFAULT 'standard'");
+            db.execSQL("UPDATE exercises SET load_mode='counterbalanced' WHERE assistance=1 OR unit LIKE 'assisted%'");
+        }
+    }
+    private void createProfileAndSessionTables(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS profile (id INTEGER PRIMARY KEY CHECK(id=1), body_weight REAL NOT NULL DEFAULT 0, unit TEXT NOT NULL DEFAULT 'lb')");
+        db.execSQL("CREATE TABLE IF NOT EXISTS session_exercises (id INTEGER PRIMARY KEY, session_id INTEGER NOT NULL, name TEXT NOT NULL, position INTEGER NOT NULL, sets INTEGER NOT NULL DEFAULT 3, reps INTEGER NOT NULL DEFAULT 8, weight REAL NOT NULL DEFAULT 0, unit TEXT NOT NULL DEFAULT 'lb', duration_seconds INTEGER NOT NULL DEFAULT 0, notes TEXT NOT NULL DEFAULT '', rest_seconds INTEGER NOT NULL DEFAULT 90, bodyweight INTEGER NOT NULL DEFAULT 0, load_mode TEXT NOT NULL DEFAULT 'standard', muscle_group TEXT NOT NULL DEFAULT '', FOREIGN KEY(session_id) REFERENCES sessions(id))");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_session_exercises_session ON session_exercises(session_id,position)");
+    }
+    private void addResultColumns(SQLiteDatabase db) {
+        try { db.execSQL("ALTER TABLE set_results ADD COLUMN raw_weight REAL NOT NULL DEFAULT 0"); } catch (Exception ignored) {}
+        try { db.execSQL("ALTER TABLE set_results ADD COLUMN raw_unit TEXT NOT NULL DEFAULT 'lb'"); } catch (Exception ignored) {}
+        try { db.execSQL("ALTER TABLE set_results ADD COLUMN effective_weight_lb REAL NOT NULL DEFAULT 0"); } catch (Exception ignored) {}
+        try { db.execSQL("ALTER TABLE set_results ADD COLUMN load_mode TEXT NOT NULL DEFAULT 'standard'"); } catch (Exception ignored) {}
+        try { db.execSQL("ALTER TABLE set_results ADD COLUMN body_weight_snapshot REAL NOT NULL DEFAULT 0"); } catch (Exception ignored) {}
+        db.execSQL("UPDATE set_results SET raw_weight=actual_weight, effective_weight_lb=actual_weight WHERE raw_weight=0 AND actual_weight>0");
     }
     private void createPackingItemsTable(SQLiteDatabase db) { db.execSQL("CREATE TABLE IF NOT EXISTS packing_items (id INTEGER PRIMARY KEY, workout_type TEXT NOT NULL, name TEXT NOT NULL, position INTEGER NOT NULL)"); }
 
@@ -128,7 +149,7 @@ final class Db extends SQLiteOpenHelper {
             if (c.moveToFirst()) p = readPlan(c);
         }
         if (p == null) return null;
-        try (Cursor c = getReadableDatabase().rawQuery("SELECT id,plan_id,name,position,sets,reps,weight,unit,duration_seconds,distance,notes,rest_seconds,bodyweight,assistance,muscle_group FROM exercises WHERE plan_id=? ORDER BY position", new String[]{String.valueOf(id)})) {
+        try (Cursor c = getReadableDatabase().rawQuery("SELECT id,plan_id,name,position,sets,reps,weight,unit,duration_seconds,distance,notes,rest_seconds,bodyweight,assistance,load_mode,muscle_group FROM exercises WHERE plan_id=? ORDER BY position", new String[]{String.valueOf(id)})) {
             while (c.moveToNext()) p.exercises.add(readExercise(c));
         }
         return p;
@@ -142,7 +163,7 @@ final class Db extends SQLiteOpenHelper {
 
     private Models.Exercise readExercise(Cursor c) {
         Models.Exercise e = new Models.Exercise();
-        e.id=c.getLong(0); e.planId=c.getLong(1); e.name=c.getString(2); e.position=c.getInt(3); e.sets=c.getInt(4); e.reps=c.getInt(5); e.weight=c.getDouble(6); e.unit=c.getString(7); e.durationSeconds=c.getInt(8); e.distance=c.getDouble(9); e.notes=c.getString(10); e.restSeconds=c.getInt(11); e.bodyweight=c.getInt(12)!=0; e.assistance=c.getInt(13)!=0; e.muscleGroup=c.getString(14);
+        e.id=c.getLong(0); e.planId=c.getLong(1); e.name=c.getString(2); e.position=c.getInt(3); e.sets=c.getInt(4); e.reps=c.getInt(5); e.weight=c.getDouble(6); e.unit=c.getString(7); e.durationSeconds=c.getInt(8); e.distance=c.getDouble(9); e.notes=c.getString(10); e.restSeconds=c.getInt(11); e.bodyweight=c.getInt(12)!=0; e.assistance=c.getInt(13)!=0; e.loadMode=c.getString(14); e.muscleGroup=c.getString(15);
         return e;
     }
 
@@ -158,7 +179,7 @@ final class Db extends SQLiteOpenHelper {
         try (Cursor c = getReadableDatabase().rawQuery("SELECT COALESCE(MAX(position)+1,0) FROM exercises WHERE plan_id=?", new String[]{String.valueOf(planId)})) { if(c.moveToFirst()) position=c.getInt(0); }
         ContentValues v = new ContentValues();
         v.put("plan_id",planId); v.put("name",name); v.put("position",position); v.put("sets",sets); v.put("reps",reps); v.put("weight",weight); v.put("unit",unit); v.put("notes",notes); v.put("rest_seconds",restSeconds);
-        v.put("bodyweight", unit.equals("bodyweight") ? 1 : 0); v.put("assistance", unit.startsWith("assisted") ? 1 : 0); v.put("duration_seconds",durationSeconds); v.put("muscle_group",muscleGroup);
+        v.put("bodyweight", unit.equals("bodyweight") ? 1 : 0); v.put("assistance", unit.startsWith("assisted") ? 1 : 0); v.put("load_mode",unit.startsWith("assisted")?WorkoutMath.LOAD_COUNTERBALANCED:unit.equals("bodyweight")?WorkoutMath.LOAD_BODYWEIGHT:WorkoutMath.LOAD_STANDARD); v.put("duration_seconds",durationSeconds); v.put("muscle_group",muscleGroup);
         return getWritableDatabase().insertOrThrow("exercises",null,v);
     }
 
@@ -169,8 +190,29 @@ final class Db extends SQLiteOpenHelper {
     long beginSession(Models.Plan p) {
         ContentValues v = new ContentValues();
         v.put("plan_id",p.id); v.put("plan_name",p.name); v.put("type",p.type); v.put("started_at",java.time.LocalDateTime.now().toString());
-        return getWritableDatabase().insertOrThrow("sessions", null, v);
+        long sessionId=getWritableDatabase().insertOrThrow("sessions", null, v);
+        for (Models.Exercise e:p.exercises) addSessionExercise(sessionId,e,e.position);
+        return sessionId;
     }
+
+    Models.Profile profile() {
+        Models.Profile p=new Models.Profile();
+        try(Cursor c=getReadableDatabase().rawQuery("SELECT body_weight,unit FROM profile WHERE id=1",null)) { if(c.moveToFirst()){p.bodyWeight=c.getDouble(0);p.unit=c.getString(1);} }
+        return p;
+    }
+    void saveProfile(double bodyWeight,String unit) { ContentValues v=new ContentValues();v.put("id",1);v.put("body_weight",bodyWeight);v.put("unit",unit);getWritableDatabase().insertWithOnConflict("profile",null,v,SQLiteDatabase.CONFLICT_REPLACE); }
+
+    List<Models.Exercise> sessionExercises(long sessionId) {
+        ArrayList<Models.Exercise> out=new ArrayList<>();
+        try(Cursor c=getReadableDatabase().rawQuery("SELECT id,session_id,name,position,sets,reps,weight,unit,duration_seconds,notes,rest_seconds,bodyweight,load_mode,muscle_group FROM session_exercises WHERE session_id=? ORDER BY position,id",new String[]{String.valueOf(sessionId)})){
+            while(c.moveToNext()){Models.Exercise e=new Models.Exercise();e.id=c.getLong(0);e.planId=c.getLong(1);e.name=c.getString(2);e.position=c.getInt(3);e.sets=c.getInt(4);e.reps=c.getInt(5);e.weight=c.getDouble(6);e.unit=c.getString(7);e.durationSeconds=c.getInt(8);e.notes=c.getString(9);e.restSeconds=c.getInt(10);e.bodyweight=c.getInt(11)!=0;e.loadMode=c.getString(12);e.assistance=WorkoutMath.LOAD_COUNTERBALANCED.equals(e.loadMode);e.muscleGroup=c.getString(13);out.add(e);}
+        } return out;
+    }
+    long addSessionExercise(long sessionId, Models.Exercise e, int position) {
+        SQLiteDatabase db=getWritableDatabase();db.execSQL("UPDATE session_exercises SET position=position+1 WHERE session_id=? AND position>=?",new Object[]{sessionId,position});
+        ContentValues v=new ContentValues();v.put("session_id",sessionId);v.put("name",e.name);v.put("position",position);v.put("sets",e.sets);v.put("reps",e.reps);v.put("weight",e.weight);v.put("unit",e.unit);v.put("duration_seconds",e.durationSeconds);v.put("notes",e.notes);v.put("rest_seconds",e.restSeconds);v.put("bodyweight",e.bodyweight?1:0);v.put("load_mode",e.loadMode);v.put("muscle_group",e.muscleGroup);return db.insertOrThrow("session_exercises",null,v);
+    }
+    void reorderExercises(long planId,List<Models.Exercise> exercises) { SQLiteDatabase db=getWritableDatabase();db.beginTransaction();try{for(int i=0;i<exercises.size();i++){ContentValues v=new ContentValues();v.put("position",i);db.update("exercises",v,"id=?",new String[]{String.valueOf(exercises.get(i).id)});}db.setTransactionSuccessful();}finally{db.endTransaction();} }
 
     void finishSession(long id, String status, String notes) {
         ContentValues v = new ContentValues();
@@ -194,14 +236,17 @@ final class Db extends SQLiteOpenHelper {
 
     void recordSet(long sessionId, Models.Exercise e, int setNumber, int actualReps, double actualWeight, int rir, String status) { recordSet(sessionId,e,setNumber,actualReps,actualWeight,rir,status,0); }
     void recordSet(long sessionId, Models.Exercise e, int setNumber, int actualReps, double actualWeight, int rir, String status, int actualDuration) {
+        Models.Profile profile=profile();
+        double displayEffective=e.bodyweight?profile.bodyWeight:WorkoutMath.effectiveLoad(e.loadMode,profile.bodyWeight,actualWeight);
+        double effectiveLb=WorkoutMath.pounds(displayEffective,e.unit);
         ContentValues v = new ContentValues();
-        v.put("session_id",sessionId); v.put("exercise_id",e.id); v.put("exercise_name",e.name); v.put("exercise_position",e.position); v.put("set_number",setNumber); v.put("target_reps",e.reps); v.put("target_weight",e.weight); v.put("target_duration_seconds",e.durationSeconds); v.put("actual_reps",actualReps); v.put("actual_weight",actualWeight); v.put("actual_duration_seconds",actualDuration); v.put("rir",rir); v.put("status",status); v.put("created_at",java.time.LocalDateTime.now().toString());
+        v.put("session_id",sessionId); v.put("exercise_id",e.id); v.put("exercise_name",e.name); v.put("exercise_position",e.position); v.put("set_number",setNumber); v.put("target_reps",e.reps); v.put("target_weight",e.weight); v.put("target_duration_seconds",e.durationSeconds); v.put("actual_reps",actualReps); v.put("actual_weight",actualWeight); v.put("actual_duration_seconds",actualDuration); v.put("raw_weight",actualWeight);v.put("raw_unit",e.unit);v.put("effective_weight_lb",effectiveLb);v.put("load_mode",e.loadMode);v.put("body_weight_snapshot",profile.bodyWeight); v.put("rir",rir); v.put("status",status); v.put("created_at",java.time.LocalDateTime.now().toString());
         getWritableDatabase().insertOrThrow("set_results",null,v);
     }
 
     String personalRecord(String exerciseName, int reps, double weight) {
         double heaviest = 0, bestVolume = 0;
-        try (Cursor c = getReadableDatabase().rawQuery("SELECT COALESCE(MAX(actual_weight),0),COALESCE(MAX(actual_reps*actual_weight),0) FROM set_results WHERE exercise_name=? AND status='complete'", new String[]{exerciseName})) {
+        try (Cursor c = getReadableDatabase().rawQuery("SELECT COALESCE(MAX(effective_weight_lb),0),COALESCE(MAX(actual_reps*effective_weight_lb),0) FROM set_results WHERE exercise_name=? AND status='complete'", new String[]{exerciseName})) {
             if (c.moveToFirst()) { heaviest = c.getDouble(0); bestVolume = c.getDouble(1); }
         }
         boolean weightPr = weight > heaviest;

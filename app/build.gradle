@@ -2,6 +2,8 @@ plugins {
     id 'com.android.application'
 }
 
+def deploymentStamp = new Date().format("yyyy-MM-dd HH:mm:ss 'UTC'", TimeZone.getTimeZone('UTC'))
+
 def signingProperties = new Properties()
 def signingPropertiesFile = rootProject.file('.keys/keystore.properties')
 if (signingPropertiesFile.exists()) {
@@ -18,6 +20,7 @@ android {
         targetSdk 35
         versionCode 12
         versionName '0.1.11'
+        buildConfigField 'String', 'DEPLOYMENT_STAMP', '"' + deploymentStamp + '"'
 
         testInstrumentationRunner 'android.test.InstrumentationTestRunner'
     }

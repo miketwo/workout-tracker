@@ -11,4 +11,6 @@ public class WorkoutMathTest {
     }
     @Test public void calculatesPace() { assertEquals("13:00", WorkoutMath.pace(26, 2)); }
     @Test public void handlesMissingPace() { assertEquals("—", WorkoutMath.pace(20, 0)); }
+    @Test public void calculatesCounterbalancedEffectiveLoad() { assertEquals(130.0, WorkoutMath.effectiveLoad(WorkoutMath.LOAD_COUNTERBALANCED,180,50),.001); }
+    @Test public void convertsKilogramsToPoundsForTotals() { assertEquals(220.462,WorkoutMath.pounds(100,"kg"),.001); }
 }

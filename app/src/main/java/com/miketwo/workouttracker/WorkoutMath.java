@@ -9,6 +9,19 @@ public final class WorkoutMath {
         return reps * weight;
     }
 
+    public static final String LOAD_STANDARD = "standard";
+    public static final String LOAD_BODYWEIGHT = "bodyweight";
+    public static final String LOAD_COUNTERBALANCED = "counterbalanced";
+
+    /** Load moved for an assisted bodyweight movement, in the displayed unit. */
+    public static double effectiveLoad(String mode, double bodyWeight, double machineWeight) {
+        return LOAD_COUNTERBALANCED.equals(mode) ? Math.max(0, bodyWeight - machineWeight) : machineWeight;
+    }
+
+    public static double pounds(double weight, String unit) {
+        return "kg".equals(unit) ? weight * 2.2046226218 : weight;
+    }
+
     public static String formatWeight(double value) {
         if (value == Math.rint(value)) return String.format(Locale.US, "%.0f", value);
         return String.format(Locale.US, "%.1f", value);

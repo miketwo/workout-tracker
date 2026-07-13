@@ -13,6 +13,7 @@ import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -31,6 +32,11 @@ final class Ui {
     static TextView text(Context c,String value,int sp,int color){TextView t=new TextView(c);t.setText(value);t.setTextSize(sp);t.setTextColor(color);t.setLineSpacing(0,1.08f);return t;}
     static TextView title(Context c,String value){TextView t=text(c,value,32,INK);t.setTypeface(Typeface.DEFAULT,Typeface.BOLD);t.setPadding(0,0,0,dp(c,8));return t;}
     static TextView heading(Context c,String value){TextView t=text(c,value,21,INK);t.setTypeface(Typeface.DEFAULT,Typeface.BOLD);t.setPadding(0,dp(c,14),0,dp(c,8));return t;}
+    static LinearLayout exerciseHeader(Context c,String exerciseName,String displayName,int textSize){
+        LinearLayout row=row(c);int drawable=ExerciseVisuals.drawableFor(exerciseName);
+        if(drawable!=0){ImageView image=new ImageView(c);image.setImageResource(drawable);image.setContentDescription(exerciseName+" exercise illustration");image.setScaleType(ImageView.ScaleType.FIT_CENTER);LinearLayout.LayoutParams imageParams=new LinearLayout.LayoutParams(dp(c,textSize>=30?94:76),dp(c,textSize>=30?82:64));imageParams.setMargins(0,0,dp(c,12),0);row.addView(image,imageParams);}
+        TextView title=text(c,displayName,textSize,INK);title.setTypeface(Typeface.DEFAULT,Typeface.BOLD);title.setLineSpacing(0,1.0f);title.setGravity(Gravity.CENTER_VERTICAL);title.setPadding(0,dp(c,4),0,dp(c,4));row.addView(title,new LinearLayout.LayoutParams(0,-2,1));return row;
+    }
     static TextView label(Context c,String value){TextView t=text(c,value.toUpperCase(Locale.getDefault()),12,MUTED);t.setTypeface(Typeface.DEFAULT,Typeface.BOLD);t.setLetterSpacing(.08f);t.setPadding(0,dp(c,8),0,dp(c,4));return t;}
     static GradientDrawable bg(int color,int radius){GradientDrawable g=new GradientDrawable();g.setColor(color);g.setCornerRadius(radius);return g;}
     static LinearLayout card(Context c){LinearLayout v=new LinearLayout(c);v.setOrientation(LinearLayout.VERTICAL);v.setPadding(dp(c,18),dp(c,16),dp(c,18),dp(c,16));v.setBackground(bg(WHITE,dp(c,18)));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(c,8),0,dp(c,8));v.setLayoutParams(p);v.setElevation(dp(c,1));return v;}
