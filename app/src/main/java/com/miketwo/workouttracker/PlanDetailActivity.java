@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.widget.Button;
 import android.widget.LinearLayout;
 
-import java.time.DayOfWeek;
 import java.util.Locale;
 
 /** Read-only plan details, usable before either editing or starting a workout. */
@@ -26,9 +25,7 @@ public class PlanDetailActivity extends Activity {
         LinearLayout body = Ui.column(this); Ui.page(this, body);
         Button back = Ui.smallButton(this, "‹ Back"); back.setOnClickListener(v -> finish()); body.addView(back);
         body.addView(Ui.title(this, plan.name));
-        String day = DayOfWeek.of(plan.weekday).toString().toLowerCase(Locale.getDefault());
-        day = Character.toUpperCase(day.charAt(0)) + day.substring(1);
-        body.addView(Ui.text(this, day + "  •  " + plan.type, 17, Ui.MUTED));
+        body.addView(Ui.text(this, plan.type, 17, Ui.MUTED));
         if (!plan.notes.isBlank()) body.addView(Ui.text(this, plan.notes, 16, Ui.MUTED));
 
         body.addView(Ui.heading(this, "Workout plan"));

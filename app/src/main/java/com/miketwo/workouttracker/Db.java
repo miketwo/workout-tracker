@@ -7,7 +7,6 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import java.time.DayOfWeek;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -130,18 +129,12 @@ final class Db extends SQLiteOpenHelper {
 
     List<Models.Plan> plans() {
         ArrayList<Models.Plan> out = new ArrayList<>();
-        try (Cursor c = getReadableDatabase().rawQuery("SELECT id,name,weekday,type,notes FROM plans WHERE archived=0 ORDER BY weekday,name", null)) {
+        try (Cursor c = getReadableDatabase().rawQuery("SELECT id,name,weekday,type,notes FROM plans WHERE archived=0 ORDER BY name COLLATE NOCASE,id", null)) {
             while (c.moveToNext()) out.add(readPlan(c));
         }
         return out;
     }
 
-    Models.Plan todayPlan() {
-        int day = LocalDate.now().getDayOfWeek().getValue();
-        try (Cursor c = getReadableDatabase().rawQuery("SELECT id,name,weekday,type,notes FROM plans WHERE archived=0 AND weekday=? ORDER BY id LIMIT 1", new String[]{String.valueOf(day)})) {
-            return c.moveToFirst() ? readPlan(c) : null;
-        }
-    }
 
     Models.Plan plan(long id) {
         Models.Plan p = null;
@@ -164,12 +157,13 @@ final class Db extends SQLiteOpenHelper {
     private Models.Exercise readExercise(Cursor c) {
         Models.Exercise e = new Models.Exercise();
         e.id=c.getLong(0); e.planId=c.getLong(1); e.name=c.getString(2); e.position=c.getInt(3); e.sets=c.getInt(4); e.reps=c.getInt(5); e.weight=c.getDouble(6); e.unit=c.getString(7); e.durationSeconds=c.getInt(8); e.distance=c.getDouble(9); e.notes=c.getString(10); e.restSeconds=c.getInt(11); e.bodyweight=c.getInt(12)!=0; e.assistance=c.getInt(13)!=0; e.loadMode=c.getString(14); e.muscleGroup=c.getString(15);
+        if(e.assistance&&e.unit.startsWith("assisted"))e.unit=e.unit.endsWith("kg")?"kg":"lb";
         return e;
     }
 
-    long savePlan(long id, String name, int weekday, String type, String notes) {
+    long savePlan(long id, String name, String type, String notes) {
         ContentValues v = new ContentValues();
-        v.put("name", name); v.put("weekday", weekday); v.put("type", type); v.put("notes", notes);
+        v.put("name", name); v.put("type", type); v.put("notes", notes);
         if (id > 0) { getWritableDatabase().update("plans", v, "id=?", new String[]{String.valueOf(id)}); return id; }
         return getWritableDatabase().insertOrThrow("plans", null, v);
     }
@@ -178,7 +172,9 @@ final class Db extends SQLiteOpenHelper {
         int position = 0;
         try (Cursor c = getReadableDatabase().rawQuery("SELECT COALESCE(MAX(position)+1,0) FROM exercises WHERE plan_id=?", new String[]{String.valueOf(planId)})) { if(c.moveToFirst()) position=c.getInt(0); }
         ContentValues v = new ContentValues();
-        v.put("plan_id",planId); v.put("name",name); v.put("position",position); v.put("sets",sets); v.put("reps",reps); v.put("weight",weight); v.put("unit",unit); v.put("notes",notes); v.put("rest_seconds",restSeconds);
+        boolean assistance=unit.startsWith("assisted");
+        String storedUnit=assistance?(unit.endsWith("kg")?"kg":"lb"):unit;
+        v.put("plan_id",planId); v.put("name",name); v.put("position",position); v.put("sets",sets); v.put("reps",reps); v.put("weight",weight); v.put("unit",storedUnit); v.put("notes",notes); v.put("rest_seconds",restSeconds);
         v.put("bodyweight", unit.equals("bodyweight") ? 1 : 0); v.put("assistance", unit.startsWith("assisted") ? 1 : 0); v.put("load_mode",unit.startsWith("assisted")?WorkoutMath.LOAD_COUNTERBALANCED:unit.equals("bodyweight")?WorkoutMath.LOAD_BODYWEIGHT:WorkoutMath.LOAD_STANDARD); v.put("duration_seconds",durationSeconds); v.put("muscle_group",muscleGroup);
         return getWritableDatabase().insertOrThrow("exercises",null,v);
     }
@@ -186,6 +182,18 @@ final class Db extends SQLiteOpenHelper {
     private String inferMuscleGroup(String name) {String n=name.toLowerCase(java.util.Locale.ROOT);if(n.contains("leg")||n.contains("calf")||n.contains("squat")||n.contains("hip"))return "Lower body";if(n.contains("ab")||n.contains("plank")||n.contains("back extension"))return "Core";return "Upper body";}
 
     void deleteExercise(long id) { getWritableDatabase().delete("exercises", "id=?", new String[]{String.valueOf(id)}); }
+
+    void deletePlan(long id) {
+        SQLiteDatabase db=getWritableDatabase();
+        db.beginTransaction();
+        try {
+            ContentValues detached=new ContentValues();detached.putNull("plan_id");
+            db.update("sessions",detached,"plan_id=?",new String[]{String.valueOf(id)});
+            db.delete("exercises","plan_id=?",new String[]{String.valueOf(id)});
+            db.delete("plans","id=?",new String[]{String.valueOf(id)});
+            db.setTransactionSuccessful();
+        } finally { db.endTransaction(); }
+    }
 
     long beginSession(Models.Plan p) {
         ContentValues v = new ContentValues();

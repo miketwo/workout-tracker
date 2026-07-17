@@ -18,8 +18,8 @@ android {
         applicationId 'com.miketwo.workouttracker'
         minSdk 26
         targetSdk 35
-        versionCode 12
-        versionName '0.1.11'
+        versionCode 16
+        versionName '0.1.15'
         buildConfigField 'String', 'DEPLOYMENT_STAMP', '"' + deploymentStamp + '"'
 
         testInstrumentationRunner 'android.test.InstrumentationTestRunner'

@@ -14,6 +14,7 @@ import android.view.WindowInsets;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -43,6 +44,7 @@ final class Ui {
     static Button button(Context c,String value,boolean primary){Button b=new Button(c);b.setText(value);b.setTextSize(17);b.setAllCaps(false);b.setTypeface(Typeface.DEFAULT,Typeface.BOLD);b.setTextColor(primary?WHITE:FOREST);b.setBackground(bg(primary?FOREST:MINT,dp(c,14)));b.setGravity(Gravity.CENTER);b.setMinHeight(dp(c,56));b.setPadding(dp(c,16),dp(c,10),dp(c,16),dp(c,10));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(c,7),0,dp(c,7));b.setLayoutParams(p);return b;}
     static Button iconButton(Context c,String value,int iconRes,boolean primary){Button b=button(c,value,primary);Drawable icon=c.getDrawable(iconRes);b.setCompoundDrawablesWithIntrinsicBounds(icon,null,null,null);b.setCompoundDrawablePadding(dp(c,12));b.setGravity(Gravity.CENTER_VERTICAL);return b;}
     static Button smallButton(Context c,String value){Button b=button(c,value,false);b.setTextSize(14);b.setMinHeight(dp(c,44));return b;}
+    static ImageButton dragHandle(Context c){ImageButton handle=new ImageButton(c);handle.setImageResource(R.drawable.ic_drag_indicator);handle.setContentDescription("Drag to reorder exercise");handle.setBackgroundColor(Color.TRANSPARENT);handle.setPadding(dp(c,10),dp(c,10),dp(c,10),dp(c,10));handle.setMinimumWidth(dp(c,48));handle.setMinimumHeight(dp(c,48));return handle;}
     static EditText input(Context c,String hint){EditText e=new EditText(c);e.setHint(hint);e.setTextSize(18);e.setTextColor(INK);e.setHintTextColor(Color.rgb(130,138,133));e.setSingleLine(false);e.setBackground(bg(WHITE,dp(c,12)));e.setPadding(dp(c,14),dp(c,12),dp(c,14),dp(c,12));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(c,4),0,dp(c,8));e.setLayoutParams(p);return e;}
     static LinearLayout row(Context c){LinearLayout r=new LinearLayout(c);r.setOrientation(LinearLayout.HORIZONTAL);r.setGravity(Gravity.CENTER_VERTICAL);return r;}
     static void weighted(View v,float weight){v.setLayoutParams(new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,weight));}

@@ -29,6 +29,7 @@
         <activity android:name=".PackingListsActivity" />
         <activity android:name=".CardioActivity" />
         <activity android:name=".WorkoutActivity" android:screenOrientation="portrait" tools:ignore="DiscouragedApi,LockedOrientationActivity" />
+        <activity android:name=".PlanImportActivity" />
         <activity android:name=".PlanEditorActivity" />
         <activity android:name=".PlanDetailActivity" />
         <activity android:name=".PlansActivity" />
