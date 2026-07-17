@@ -7,6 +7,8 @@ import android.os.Looper;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -62,9 +64,9 @@ public class AppSmokeTest {
 
     @Test public void homeShowsVersionQuoteAndRoutesToTheThreeActivities() {
         try (ActivityController<HomeActivity> home = Robolectric.buildActivity(HomeActivity.class).setup()) {
-            TextView version = findText(home.get().getWindow().getDecorView(), "Version 0.1.11");
+            TextView version = findText(home.get().getWindow().getDecorView(), "Version 0.1.15");
             assertNotNull(version);
-            assertTrue(version.getText().toString().contains("build 12"));
+            assertTrue(version.getText().toString().contains("build 16"));
             assertNotNull(findText(home.get().getWindow().getDecorView(), "James Allen"));
             assertNull(findButton(home.get().getWindow().getDecorView(), "Let's go!"));
             assertRoute(home.get(), "Plan", PlansActivity.class);
@@ -123,6 +125,42 @@ public class AppSmokeTest {
         }
         try (ActivityController<CardioActivity> run = Robolectric.buildActivity(CardioActivity.class).setup()) {
             assertNotNull(findButton(run.get().getWindow().getDecorView(), "Start guided run/walk intervals"));
+        }
+    }
+
+    @Test public void planEditorDragReordersCardsWithoutDuplicatingAnExercise() throws Exception {
+        Db db=Db.get(app); Models.Plan plan=null;
+        for(Models.Plan candidate:db.plans()) if("Upper body".equals(candidate.name)) {plan=candidate;break;}
+        assertNotNull(plan);
+        Intent intent=new Intent(app,PlanEditorActivity.class).putExtra("plan_id",plan.id);
+        try(ActivityController<PlanEditorActivity> editor=Robolectric.buildActivity(PlanEditorActivity.class,intent).setup()){
+            View decor=editor.get().getWindow().getDecorView();
+            decor.measure(View.MeasureSpec.makeMeasureSpec(1080,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(2400,View.MeasureSpec.EXACTLY));
+            decor.layout(0,0,1080,2400);
+            LinearLayout list=(LinearLayout)field(editor.get(),"exerciseList");
+            assertEquals(3,list.getChildCount());
+            ImageButton handle=findImageButton(editor.get().getWindow().getDecorView(),"Drag to reorder exercise");
+            assertNotNull(handle);
+            View destination=list.getChildAt(2);int[] destinationLocation=new int[2];destination.getLocationOnScreen(destinationLocation);
+            int[] handleLocation=new int[2];handle.getLocationOnScreen(handleLocation);
+            sendTouch(handle,android.view.MotionEvent.ACTION_DOWN,handleLocation[0]+handle.getWidth()/2,handleLocation[1]+handle.getHeight()/2);
+            sendTouch(handle,android.view.MotionEvent.ACTION_MOVE,handleLocation[0]+handle.getWidth()/2,destinationLocation[1]+destination.getHeight()-1);
+            View draggedCard=(View)handle.getParent().getParent();
+            assertTrue(Math.abs(draggedCard.getTranslationY())>1);
+            assertEquals(1.02f,draggedCard.getScaleX(),.001f);
+            assertEquals(0,list.indexOfChild(draggedCard));
+            sendTouch(handle,android.view.MotionEvent.ACTION_MOVE,handleLocation[0]+handle.getWidth()/2,destinationLocation[1]+destination.getHeight()-1);
+            sendTouch(handle,android.view.MotionEvent.ACTION_MOVE,handleLocation[0]+handle.getWidth()/2,destinationLocation[1]+destination.getHeight()-1);
+            sendTouch(handle,android.view.MotionEvent.ACTION_UP,handleLocation[0]+handle.getWidth()/2,destinationLocation[1]+destination.getHeight()-1);
+            shadowOf(Looper.getMainLooper()).idle();
+            Models.Plan reordered=db.plan(plan.id);
+            assertEquals(3,reordered.exercises.size());
+            assertEquals("Lat pulldown",reordered.exercises.get(2).name);
+            java.util.HashSet<Long> ids=new java.util.HashSet<>();for(Models.Exercise exercise:reordered.exercises)ids.add(exercise.id);
+            assertEquals(3,ids.size());
+            LinearLayout reorderedCards=(LinearLayout)field(editor.get(),"exerciseList");
+            assertEquals(3,reorderedCards.getChildCount());
+            assertNotNull(findText(reorderedCards.getChildAt(2),"3. Lat pulldown"));
         }
     }
 
@@ -198,4 +236,13 @@ public class AppSmokeTest {
         }
         return null;
     }
+
+    private ImageButton findImageButton(View view,String description) {
+        if(view instanceof ImageButton&&description.contentEquals(view.getContentDescription()))return (ImageButton)view;
+        if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++){ImageButton found=findImageButton(group.getChildAt(i),description);if(found!=null)return found;}}
+        return null;
+    }
+
+    private Object field(Object target,String name) throws Exception {java.lang.reflect.Field field=target.getClass().getDeclaredField(name);field.setAccessible(true);return field.get(target);}
+    private void sendTouch(View target,int action,float x,float y){android.view.MotionEvent event=android.view.MotionEvent.obtain(0,System.currentTimeMillis(),action,x,y,0);target.dispatchTouchEvent(event);event.recycle();}
 }
